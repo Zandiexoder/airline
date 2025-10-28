@@ -541,8 +541,7 @@ public class SearchUtil {
 		System.out.println("!!!!!!!!!!!!!!!ES HOST IS " + esHost);
 		RestHighLevelClient client = new RestHighLevelClient(
 				RestClient.builder(
-						new HttpHost(esHost, 9200, "http"),
-						new HttpHost(esHost, 9201, "http")));
+						new HttpHost(esHost, 9200, "http")));
 		return client;
 	}
 }
