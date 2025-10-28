@@ -441,20 +441,24 @@ function addCustomMapControls(map) {
 }
 
 function addAirlineSpecificMapControls(map) {
+    // Safety check - ensure map and custom controls are initialized
+    if (!map || !map.customControls || !map.customControls._container) {
+        console.warn('Map or custom controls not initialized yet, skipping airline-specific controls');
+        return;
+    }
+    
     var toggleHeatmapButton = $('<div id="toggleMapHeatmapButton" class="googleMapIcon" onclick="toggleHeatmap()" align="center"  style="margin-bottom: 10px;"><span class="alignHelper"></span><img src="assets/images/icons/table-heatmap.png" title=\'toggle heatmap\' style="vertical-align: middle;"/></div>')
 
     toggleHeatmapButton.index = 4
 
     // Add to existing custom controls container
-    if (map.customControls && map.customControls._container) {
-        var container = $(map.customControls._container);
-        // Insert at position 3 (after champion button, before christmas)
-        var controls = container.children('.googleMapIcon');
-        if (controls.length >= 3) {
-            $(controls[3]).before(toggleHeatmapButton[0]);
-        } else {
-            container.append(toggleHeatmapButton[0]);
-        }
+    var container = $(map.customControls._container);
+    // Insert at position 3 (after champion button, before christmas)
+    var controls = container.children('.googleMapIcon');
+    if (controls.length >= 3) {
+        $(controls[3]).before(toggleHeatmapButton[0]);
+    } else {
+        container.append(toggleHeatmapButton[0]);
     }
 }
 

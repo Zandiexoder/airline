@@ -1,4 +1,4 @@
-var promptQueue
+var promptQueue = []  // Initialize immediately to prevent errors
 var tutorialQueues
 var promptInterval
 var activePrompt
@@ -6,7 +6,7 @@ var activeTutorial
 var tutorialsCompleted
 
 function initPrompts() {
-    promptQueue = []
+    promptQueue = []  // Reset on init
     if (promptInterval) {
         clearInterval(promptInterval)
         promptInterval = undefined
