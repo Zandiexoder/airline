@@ -6,7 +6,8 @@ RUN apt-get update \
         curl \
         screen \
         nano \
-        sudo
+        sudo \
+        mysql-client
 
 RUN groupadd -r -g 1000 airline \
     && useradd -u 1000 -r -g 1000 -d /home/airline airline \

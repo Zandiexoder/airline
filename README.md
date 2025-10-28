@@ -24,16 +24,34 @@ Live at https://myfly.club/
 1. Open another terminal, navigate to `airline-web`, run the web server by `sbt run`
 1. The application should be accessible at `localhost:9000`
 
-## Alternate Docker Setup
+## Alternate Docker Setup (Recommended)
+
+**See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for detailed instructions and troubleshooting.**
+
+### Quick Start
 1. Install Docker & Docker-compose
-1. run `cp docker-compose.override.yaml.dist docker-compose.override.yaml` and then edit the new file with your preferred ports. Mysql only has to have exposed ports if you like to connect from outside docker
-   1. If you plan to use this anything else than for development, adjust the credentials via environment variables
-2. start the stack with `docker compose up -d` and confirm both containers are running
-3. open a shell inside the container via `docker compose exec airline-app bash`
-4. run the init scripts:
-   1. `sh init-data.sh` (might need to run it a couple of times because migration seems to be spotty)
-5. To boot up both front and backend, use the start scripts `sh start-data.sh` and `sh start-web.sh` in separate sessions
-6. The application should be accessible at your hosts ip address and port 9000. If docker networks aren't limited by firewalls or network settings, it should be available without any reverse-proxying. (Dev only!)
+2. Run `cp docker-compose.override.yaml.dist docker-compose.override.yaml` and edit ports if needed
+3. Start the stack: `docker compose up -d`
+4. Wait for all containers to be healthy: `docker compose ps`
+5. Initialize and start everything automatically:
+   ```bash
+   docker compose exec airline-app bash /home/airline/start-all.sh
+   ```
+6. The application will be accessible at http://localhost:9000
+
+### What's Improved?
+- ✅ **Reliable initialization** - No more spotty behavior! The init script now properly waits for MySQL and retries with exponential backoff
+- ✅ **Health checks** - Containers wait for dependencies to be ready
+- ✅ **Automated startup** - One command to init and start everything
+- ✅ **Better error messages** - Clear feedback when things go wrong
+- ✅ **Utility scripts** - Check status, troubleshoot issues easily
+
+### Manual Step-by-Step (if you prefer)
+4. Open shell: `docker compose exec airline-app bash`
+5. Run initialization: `bash init-data.sh` (robust retry logic - no more spotty behavior!)
+6. Start backend (separate terminal): `bash start-data.sh`
+7. Start frontend (separate terminal): `bash start-web.sh`
+8. Access at http://localhost:9000
 
 
 ## Nginx Proxy w/ Cloudflare HTTPS

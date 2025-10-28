@@ -12,13 +12,19 @@ services:
       context: .
       dockerfile: .docker/Dockerfile
     depends_on:
-      - airline-db
+      airline-db:
+        condition: service_healthy
+      airline-search:
+        condition: service_started
     volumes:
       - ".:/home/airline/airline"
       - "./.docker/data/init.sh:/home/airline/init-data.sh"
       - "./.docker/data/start.sh:/home/airline/start-data.sh"
       - "./.docker/web/start.sh:/home/airline/start-web.sh"
       - "./.docker/web/clean.sh:/home/airline/clean-web.sh"
+      - "./.docker/start-all.sh:/home/airline/start-all.sh"
+      - "./.docker/check-init-status.sh:/home/airline/check-init-status.sh"
+      - "./.docker/wait-for-mysql.sh:/home/airline/wait-for-mysql.sh"
     environment:
       DB_HOST: airline-db
       ES_HOST: airline-search
@@ -47,7 +53,13 @@ services:
 #    ports:
 #      - "3306:3306"
     volumes:
-      - "mysql-data:/var/lib/mysql"
+      - "mysql-data:/bitnami/mysql/data"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "mfc01", "-pghEtmwBdnXYBQH4"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - airline
 
