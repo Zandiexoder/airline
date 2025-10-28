@@ -54,7 +54,22 @@ function toggleMapLight() {
 	$.cookie('currentMapStyles', currentStyles);
 	console.log($.cookie('currentMapStyles'))
 	
-	map.setOptions({styles: getMapStyles()});
+	// Update Leaflet tile layer instead of Google Maps styles
+	if (typeof updateLeafletTileLayer === 'function') {
+		// Use current map type (roadmap/satellite) with new style (light/dark)
+		var mapType = map.currentMapType || 'roadmap';
+		if (mapType === 'roadmap') {
+			// For roadmap, switch between light and dark
+			updateLeafletTileLayer(currentStyles === 'dark' ? 'dark' : 'light');
+		} else if (mapType === 'satellite') {
+			// Satellite doesn't have light/dark variants, keep as is
+			updateLeafletTileLayer('satellite');
+		}
+	} else {
+		// Fallback for Google Maps
+		map.setOptions({styles: getMapStyles()});
+	}
+	
 	refreshLinks(false)
 }
 

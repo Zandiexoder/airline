@@ -301,32 +301,89 @@ function hideUserSpecificElements() {
 
 function initMap() {
 	initStyles()
-  map = new google.maps.Map(document.getElementById('map'), {
-	center: {lat: 20, lng: 150.644},
-   	zoom : 2,
-   	minZoom : 2,
-   	gestureHandling: 'greedy',
-   	styles: getMapStyles(),
-	mapTypeId: getMapTypes(),
-   	restriction: {
-                latLngBounds: { north: 85, south: -85, west: -180, east: 180 },
-              }
-  });
 	
-  google.maps.event.addListener(map, 'zoom_changed', function() {
-	    var zoom = map.getZoom();
-	    // iterate over markers and call setVisible
-	    $.each(markers, function( key, marker ) {
-	        marker.setVisible(isShowMarker(marker, zoom));
-	    })
-  });
-  
-  google.maps.event.addListener(map, 'maptypeid_changed', function() { 
-		var mapType = map.getMapTypeId();
+	// Initialize Leaflet map with OpenStreetMap
+	map = L.map('map', {
+		center: [20, 150.644],
+		zoom: 2,
+		minZoom: 2,
+		maxBounds: [[85, -180], [-85, 180]],
+		maxBoundsViscosity: 1.0,
+		zoomControl: true,
+		worldCopyJump: true
+	});
+	
+	// Add tile layer based on current map type
+	var currentMapType = getMapTypes();
+	updateLeafletTileLayer(currentMapType);
+	
+	// Store current map type
+	map.currentMapType = currentMapType;
+	
+	// Add zoom change listener
+	map.on('zoomend', function() {
+		var zoom = map.getZoom();
+		// iterate over markers and call setVisible
+		$.each(markers, function(key, marker) {
+			if (marker.setVisible) {
+				marker.setVisible(isShowMarker(marker, zoom));
+			} else if (marker._icon) {
+				// Handle Leaflet markers
+				if (isShowMarker(marker, zoom)) {
+					marker.addTo(map);
+				} else {
+					marker.remove();
+				}
+			}
+		});
+	});
+	
+	// Add map type change handler (for switching between light/dark/satellite)
+	map.on('baselayerchange', function(e) {
+		var mapType = e.name || 'roadmap';
 		$.cookie('currentMapTypes', mapType);
-  });
+	});
 
-  addCustomMapControls(map)
+	addCustomMapControls(map)
+}
+
+// Helper function to update tile layer
+function updateLeafletTileLayer(mapType) {
+	// Remove existing tile layer if present
+	if (map.tileLayer) {
+		map.removeLayer(map.tileLayer);
+	}
+	
+	var tileUrl, attribution;
+	
+	switch(mapType) {
+		case 'satellite':
+			tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+			attribution = '&copy; <a href="https://www.esri.com/">Esri</a>';
+			break;
+		case 'dark':
+			tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+			attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+			break;
+		case 'light':
+			tileUrl = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+			attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+			break;
+		case 'roadmap':
+		default:
+			tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+			attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+			break;
+	}
+	
+	map.tileLayer = L.tileLayer(tileUrl, {
+		attribution: attribution,
+		maxZoom: 19,
+		subdomains: ['a', 'b', 'c']
+	});
+	
+	map.tileLayer.addTo(map);
+	map.currentMapType = mapType;
 }
 
 function addCustomMapControls(map) {
@@ -350,30 +407,37 @@ function addCustomMapControls(map) {
   toggleChampionButton.index = 3
   toggleMapChristmasButton.index = 5
 
-
-  if ($("#map").height() > 500) {
-    map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(toggleAllianceBaseMapViewButton[0]);
-    map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(toggleMapLightButton[0]);
-    map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(toggleMapAnimationButton[0]);
-    map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(toggleChampionButton[0])
-    //map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(toggleHeatmapButton[0])
-
-    if (christmasFlag) {
-       map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(toggleMapChristmasButton[0]);
-       toggleMapChristmasButton.show()
+  // Create Leaflet custom control
+  var controlPosition = $("#map").height() > 500 ? 'bottomright' : 'bottomleft';
+  
+  // Create a custom control container
+  var CustomControl = L.Control.extend({
+    options: {
+      position: controlPosition
+    },
+    onAdd: function(map) {
+      var container = L.DomUtil.create('div', 'leaflet-custom-controls');
+      
+      // Add controls in order
+      $(container).append(toggleAllianceBaseMapViewButton[0]);
+      $(container).append(toggleMapLightButton[0]);
+      $(container).append(toggleMapAnimationButton[0]);
+      $(container).append(toggleChampionButton[0]);
+      
+      if (christmasFlag) {
+        $(container).append(toggleMapChristmasButton[0]);
+        toggleMapChristmasButton.show();
+      }
+      
+      // Prevent click propagation to map
+      L.DomEvent.disableClickPropagation(container);
+      
+      return container;
     }
-
-  } else {
-    map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(toggleAllianceBaseMapViewButton[0])
-    map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(toggleMapLightButton[0]);
-    map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(toggleMapAnimationButton[0]);
-    map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(toggleChampionButton[0])
-    //map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(toggleHeatmapButton[0])
-
-    if (christmasFlag) {
-       map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(toggleMapChristmasButton[0]);
-    }
-  }
+  });
+  
+  map.customControls = new CustomControl();
+  map.customControls.addTo(map);
 }
 
 function addAirlineSpecificMapControls(map) {
@@ -381,10 +445,16 @@ function addAirlineSpecificMapControls(map) {
 
     toggleHeatmapButton.index = 4
 
-    if ($("#map").height() > 500) {
-        map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].insertAt(3, toggleHeatmapButton[0])
-     } else {
-        map.controls[google.maps.ControlPosition.LEFT_BOTTOM].insertAt(3, toggleHeatmapButton[0])
+    // Add to existing custom controls container
+    if (map.customControls && map.customControls._container) {
+        var container = $(map.customControls._container);
+        // Insert at position 3 (after champion button, before christmas)
+        var controls = container.children('.googleMapIcon');
+        if (controls.length >= 3) {
+            $(controls[3]).before(toggleHeatmapButton[0]);
+        } else {
+            container.append(toggleHeatmapButton[0]);
+        }
     }
 }
 

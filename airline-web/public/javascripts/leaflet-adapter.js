@@ -391,6 +391,181 @@ function addArrowDecorator(polyline, color) {
     return null;
 }
 
+/**
+ * Google Maps Compatibility Layer
+ * Creates a partial google.maps object for backward compatibility
+ */
+if (typeof google === 'undefined') {
+    window.google = {};
+}
+
+if (typeof google.maps === 'undefined') {
+    google.maps = {
+        // Marker constructor wrapper
+        Marker: function(options) {
+            var marker;
+            
+            if (options.position) {
+                var latlng = [options.position.lat, options.position.lng];
+                
+                var markerOptions = {
+                    title: options.title || ''
+                };
+                
+                // Handle custom icon
+                if (options.icon) {
+                    if (typeof options.icon === 'string') {
+                        markerOptions.icon = L.icon({
+                            iconUrl: options.icon,
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 32],
+                            popupAnchor: [0, -32]
+                        });
+                    } else if (options.icon.url) {
+                        markerOptions.icon = L.icon({
+                            iconUrl: options.icon.url,
+                            iconSize: options.icon.scaledSize ? 
+                                [options.icon.scaledSize.width, options.icon.scaledSize.height] : 
+                                [32, 32],
+                            iconAnchor: options.icon.anchor ? 
+                                [options.icon.anchor.x, options.icon.anchor.y] : 
+                                [16, 32],
+                            popupAnchor: [0, -32]
+                        });
+                    }
+                }
+                
+                marker = L.marker(latlng, markerOptions);
+                
+                // Add compatibility methods
+                marker.setVisible = function(visible) {
+                    if (visible) {
+                        if (options.map && !marker._map) {
+                            marker.addTo(options.map);
+                        }
+                    } else {
+                        if (marker._map) {
+                            marker.remove();
+                        }
+                    }
+                };
+                
+                marker.setMap = function(map) {
+                    if (map) {
+                        marker.addTo(map);
+                    } else {
+                        marker.remove();
+                    }
+                };
+                
+                marker.getPosition = function() {
+                    var latlng = marker.getLatLng();
+                    return { lat: latlng.lat, lng: latlng.lng };
+                };
+                
+                // Add to map if specified
+                if (options.map) {
+                    marker.addTo(options.map);
+                }
+            }
+            
+            return marker;
+        },
+        
+        // Polyline constructor wrapper
+        Polyline: function(options) {
+            var latlngs = [];
+            if (options.path) {
+                latlngs = options.path.map(function(p) {
+                    return [p.lat, p.lng];
+                });
+            }
+            
+            var polylineOptions = {
+                color: options.strokeColor || '#FF0000',
+                weight: options.strokeWeight || 2,
+                opacity: options.strokeOpacity || 1.0
+            };
+            
+            var polyline = L.polyline(latlngs, polylineOptions);
+            
+            // Add compatibility methods
+            polyline.setMap = function(map) {
+                if (map) {
+                    polyline.addTo(map);
+                } else {
+                    polyline.remove();
+                }
+            };
+            
+            polyline.setPath = function(path) {
+                var latlngs = path.map(function(p) {
+                    return [p.lat, p.lng];
+                });
+                polyline.setLatLngs(latlngs);
+            };
+            
+            polyline.getPath = function() {
+                return polyline.getLatLngs().map(function(ll) {
+                    return { lat: ll.lat, lng: ll.lng };
+                });
+            };
+            
+            // Add to map if specified
+            if (options.map) {
+                polyline.addTo(options.map);
+            }
+            
+            return polyline;
+        },
+        
+        // Event system wrapper
+        event: {
+            addListener: function(instance, eventName, handler) {
+                // Map Google Maps events to Leaflet events
+                var leafletEvent = eventName;
+                switch(eventName) {
+                    case 'zoom_changed':
+                        leafletEvent = 'zoomend';
+                        break;
+                    case 'maptypeid_changed':
+                        leafletEvent = 'baselayerchange';
+                        break;
+                    case 'bounds_changed':
+                        leafletEvent = 'moveend';
+                        break;
+                    case 'click':
+                        leafletEvent = 'click';
+                        break;
+                }
+                
+                if (instance.on) {
+                    instance.on(leafletEvent, handler);
+                }
+            },
+            
+            removeListener: function(listener) {
+                if (listener && listener.off) {
+                    listener.off();
+                }
+            }
+        },
+        
+        // Geometry spherical functions
+        geometry: {
+            spherical: LeafletGeometry
+        },
+        
+        // ControlPosition enum
+        ControlPosition: {
+            RIGHT_BOTTOM: 'bottomright',
+            LEFT_BOTTOM: 'bottomleft',
+            TOP_RIGHT: 'topright',
+            TOP_LEFT: 'topleft'
+        }
+    };
+}
+
 // Export utilities
 window.LeafletGeometry = LeafletGeometry;
 window.ControlPositions = ControlPositions;
