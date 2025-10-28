@@ -41,12 +41,22 @@ else
   echo "✓ Skipping sbt clean (target exists) - saves ~30-60 seconds!"
 fi
 
-# Only publish if needed
-if [ "$FORCE_PUBLISH" = "true" ] || [ ! -f "target/scala-2.13/airline-data_2.13-0.1-SNAPSHOT.jar" ]; then
-  echo "Publishing locally..."
+# Check if airline-data is already published to local Ivy repository
+IVY_PATH="/home/airline/.ivy2/local/default/airline-data_2.13/2.1/jars/airline-data_2.13-2.1.jar"
+
+if [ "$FORCE_PUBLISH" = "true" ] || [ ! -f "$IVY_PATH" ]; then
+  echo "Publishing airline-data to local Ivy repository..."
   sbt publishLocal
+  
+  if [ ! -f "$IVY_PATH" ]; then
+    echo "✗ WARNING: publishLocal completed but JAR not found at $IVY_PATH"
+    echo "  This may cause airline-web build to fail!"
+  else
+    echo "✓ airline-data published successfully"
+  fi
 else
-  echo "✓ Skipping publishLocal (JAR exists) - saves ~60-120 seconds!"
+  echo "✓ Skipping publishLocal (already in Ivy cache) - saves ~60-120 seconds!"
+  echo "  Found: $IVY_PATH"
 fi
 
 echo "===== STARTING DATABASE MIGRATION ====="

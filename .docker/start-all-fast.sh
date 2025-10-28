@@ -36,7 +36,43 @@ wait_for_backend() {
   echo "⚠ Backend health check timed out, continuing anyway..."
 }
 
-# Smart initialization check
+# Check if airline-data needs to be published
+ensure_airline_data_published() {
+  IVY_PATH="/home/airline/.ivy2/local/default/airline-data_2.13/2.1/jars/airline-data_2.13-2.1.jar"
+  
+  if [ "$FORCE_PUBLISH" = "true" ] || [ ! -f "$IVY_PATH" ]; then
+    echo "Publishing airline-data to local Ivy repository..."
+    cd /home/airline/airline/airline-data
+    sbt publishLocal
+    
+    if [ ! -f "$IVY_PATH" ]; then
+      echo "✗ ERROR: publishLocal failed - JAR not found at $IVY_PATH"
+      return 1
+    else
+      echo "✓ airline-data published successfully"
+      return 0
+    fi
+  else
+    echo "✓ airline-data already published (found in Ivy cache)"
+    return 0
+  fi
+}
+
+# STEP 1: Ensure airline-data is published (needed by airline-web)
+echo ""
+echo "=========================================="
+echo "  Checking Dependencies"
+echo "=========================================="
+if ! ensure_airline_data_published; then
+  echo "✗ Failed to publish airline-data dependency!"
+  exit 1
+fi
+
+# STEP 2: Smart database initialization check
+echo ""
+echo "=========================================="
+echo "  Checking Database Initialization"
+echo "=========================================="
 if check_db_initialized; then
   echo ""
   echo "✓ Database already initialized (found existing data)"
