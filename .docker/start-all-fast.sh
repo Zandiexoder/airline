@@ -38,18 +38,23 @@ wait_for_backend() {
 
 # Check if airline-data needs to be published
 ensure_airline_data_published() {
-  IVY_PATH="/home/airline/.ivy2/local/default/airline-data_2.13/2.1/jars/airline-data_2.13-2.1.jar"
+  # SBT publishes without version suffix in filename: airline-data_2.13.jar
+  # But keeps version in directory structure: .../2.1/jars/
+  IVY_JAR="/home/airline/.ivy2/local/default/airline-data_2.13/2.1/jars/airline-data_2.13.jar"
+  IVY_XML="/home/airline/.ivy2/local/default/airline-data_2.13/2.1/ivys/ivy.xml"
   
-  if [ "$FORCE_PUBLISH" = "true" ] || [ ! -f "$IVY_PATH" ]; then
+  if [ "$FORCE_PUBLISH" = "true" ] || [ ! -f "$IVY_JAR" ] || [ ! -f "$IVY_XML" ]; then
     echo "Publishing airline-data to local Ivy repository..."
     cd /home/airline/airline/airline-data
     sbt publishLocal
     
-    if [ ! -f "$IVY_PATH" ]; then
-      echo "✗ ERROR: publishLocal failed - JAR not found at $IVY_PATH"
+    if [ ! -f "$IVY_JAR" ]; then
+      echo "✗ ERROR: publishLocal failed - JAR not found at $IVY_JAR"
+      echo "  Checking what was actually published..."
+      ls -la /home/airline/.ivy2/local/default/airline-data_2.13/2.1/jars/ 2>/dev/null || echo "  Directory doesn't exist!"
       return 1
     else
-      echo "✓ airline-data published successfully"
+      echo "✓ airline-data published successfully to $IVY_JAR"
       return 0
     fi
   else

@@ -42,21 +42,25 @@ else
 fi
 
 # Check if airline-data is already published to local Ivy repository
-IVY_PATH="/home/airline/.ivy2/local/default/airline-data_2.13/2.1/jars/airline-data_2.13-2.1.jar"
+# SBT publishes as airline-data_2.13.jar (no version suffix in filename)
+IVY_JAR="/home/airline/.ivy2/local/default/airline-data_2.13/2.1/jars/airline-data_2.13.jar"
+IVY_XML="/home/airline/.ivy2/local/default/airline-data_2.13/2.1/ivys/ivy.xml"
 
-if [ "$FORCE_PUBLISH" = "true" ] || [ ! -f "$IVY_PATH" ]; then
+if [ "$FORCE_PUBLISH" = "true" ] || [ ! -f "$IVY_JAR" ] || [ ! -f "$IVY_XML" ]; then
   echo "Publishing airline-data to local Ivy repository..."
   sbt publishLocal
   
-  if [ ! -f "$IVY_PATH" ]; then
-    echo "✗ WARNING: publishLocal completed but JAR not found at $IVY_PATH"
+  if [ ! -f "$IVY_JAR" ]; then
+    echo "✗ WARNING: publishLocal completed but JAR not found at $IVY_JAR"
     echo "  This may cause airline-web build to fail!"
+    echo "  Checking what was published..."
+    ls -la /home/airline/.ivy2/local/default/airline-data_2.13/2.1/jars/ 2>/dev/null || echo "  Directory doesn't exist!"
   else
-    echo "✓ airline-data published successfully"
+    echo "✓ airline-data published successfully to $IVY_JAR"
   fi
 else
   echo "✓ Skipping publishLocal (already in Ivy cache) - saves ~60-120 seconds!"
-  echo "  Found: $IVY_PATH"
+  echo "  Found: $IVY_JAR"
 fi
 
 echo "===== STARTING DATABASE MIGRATION ====="
