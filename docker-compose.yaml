@@ -29,7 +29,10 @@ services:
       - "./.docker/check-init-status.sh:/home/airline/check-init-status.sh"
       - "./.docker/wait-for-mysql.sh:/home/airline/wait-for-mysql.sh"
     environment:
-      DB_HOST: airline-db
+      DB_HOST: airline-db:3306
+      DB_NAME: airline
+      DB_USER: mfc01
+      DB_PASSWORD: ghEtmwBdnXYBQH4
       ES_HOST: airline-search
     entrypoint: ["tail", "-f", "/dev/null"]
 #    ports:
