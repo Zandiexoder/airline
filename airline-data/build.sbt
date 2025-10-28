@@ -1,5 +1,7 @@
 name := """airline-data"""
 
+organization := "default"
+
 version := "2.1"
 
 scalaVersion := "2.13.11"
