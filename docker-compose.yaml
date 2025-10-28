@@ -16,7 +16,7 @@ services:
       airline-db:
         condition: service_healthy
       airline-search:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ".:/home/airline/airline"
       - "airline-target:/home/airline/airline/airline-data/target"
@@ -97,5 +97,11 @@ services:
     container_name: airline-search
     environment:
       discovery.type: single-node
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
     networks:
       - airline
