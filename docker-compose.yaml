@@ -4,6 +4,7 @@ networks:
 volumes:
   mysql-data: {}
   airline-target: {}
+  airline-web-target: {}
 
 services:
   airline-app:
@@ -18,6 +19,8 @@ services:
         condition: service_started
     volumes:
       - ".:/home/airline/airline"
+      - "airline-target:/home/airline/airline/airline-data/target"
+      - "airline-web-target:/home/airline/airline/airline-web/target"
       - "./.docker/data/init.sh:/home/airline/init-data.sh"
       - "./.docker/data/start.sh:/home/airline/start-data.sh"
       - "./.docker/web/start.sh:/home/airline/start-web.sh"
