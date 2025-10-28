@@ -41,7 +41,7 @@ services:
       - airline
 
   airline-db:
-    image: bitnami/mysql:8.0
+    image: bitnami/mysql:8.0.40
     container_name: airline-db
     environment:
       MYSQL_DATABASE: airline
