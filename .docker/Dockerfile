@@ -16,6 +16,13 @@ RUN groupadd -r -g 1000 airline \
 RUN mkdir -p /home/airline/bin \
     && chown -vR airline:airline /home/airline \
     && chmod -vR 755 /home/airline
+
+# Create target directories with proper ownership
+RUN mkdir -p /home/airline/airline/airline-data/target \
+    && mkdir -p /home/airline/airline/airline-web/target \
+    && chown -R airline:airline /home/airline/airline \
+    && chmod -R 755 /home/airline/airline
+
 USER airline
 ENV PATH="$PATH:/home/airline/bin"
 
