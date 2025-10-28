@@ -50,5 +50,10 @@ echo "  Starting Frontend Web Server"
 echo "=========================================="
 echo ""
 
+# Display all service URLs
+echo "📊 Admin Panel is available at: http://localhost:9001"
+echo "   (Running in separate container)"
+echo ""
+
 # Start the frontend (this will run in foreground)
 sh /home/airline/start-web.sh

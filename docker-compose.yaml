@@ -46,6 +46,30 @@ services:
     networks:
       - airline
 
+  admin-panel:
+    container_name: admin-panel
+    build:
+      context: ./admin-panel
+      dockerfile: Dockerfile
+    depends_on:
+      airline-db:
+        condition: service_healthy
+    ports:
+      - "9001:9001"
+    environment:
+      DB_HOST: airline-db:3306
+      DB_NAME: airline
+      DB_USER: mfc01
+      DB_PASSWORD: ghEtmwBdnXYBQH4
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9001/api/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - airline
+
   airline-db:
     image: mysql:8.0
     container_name: airline-db

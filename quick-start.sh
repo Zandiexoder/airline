@@ -51,6 +51,18 @@ fi
 echo "Starting Docker containers..."
 docker compose up -d
 
+# Wait a moment for containers to initialize
+sleep 3
+
+echo ""
+echo "==========================================
+  Services Status
+=========================================="
+docker compose ps
+
+echo ""
+echo "✓ Main Application: http://localhost:9000"
+echo "✓ Admin Panel: http://localhost:9001"
 echo ""
 echo "Waiting for containers to start..."
 sleep 5

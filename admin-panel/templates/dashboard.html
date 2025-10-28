@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airline Game - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-banned {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .pagination {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid #dee2e6;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .pagination button:hover {
+            background: #f8f9fa;
+        }
+        
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        
+        .user-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 90%;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>✈️ Airline Game - Admin Panel</h1>
+        <p>User Management & Statistics Dashboard</p>
+    </div>
+    
+    <div class="container">
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value" id="total-users">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active (7 days)</div>
+                <div class="stat-value" id="active-users">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">New (30 days)</div>
+                <div class="stat-value" id="new-users">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Current Time</div>
+                <div class="stat-value" id="current-time" style="font-size: 18px;">-</div>
+            </div>
+        </div>
+        
+        <!-- User List -->
+        <div class="section">
+            <h2 class="section-title">User Accounts</h2>
+            <input type="text" class="search-box" id="search-box" placeholder="🔍 Search by username or email...">
+            
+            <div id="users-table-container">
+                <div class="loading">Loading users...</div>
+            </div>
+            
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+    
+    <!-- User Details Modal -->
+    <div class="user-modal" id="user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">User Details</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modal-body">Loading...</div>
+        </div>
+    </div>
+    
+    <script>
+        let currentPage = 1;
+        let searchTimeout;
+        
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                document.getElementById('total-users').textContent = data.total_users.toLocaleString();
+                document.getElementById('active-users').textContent = data.active_users.toLocaleString();
+                document.getElementById('new-users').textContent = data.new_users.toLocaleString();
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        // Load users
+        async function loadUsers(page = 1, search = '') {
+            const container = document.getElementById('users-table-container');
+            container.innerHTML = '<div class="loading">Loading users...</div>';
+            
+            try {
+                const response = await fetch(`/api/users?page=${page}&per_page=50&search=${encodeURIComponent(search)}`);
+                const data = await response.json();
+                
+                if (data.users.length === 0) {
+                    container.innerHTML = '<div class="loading">No users found</div>';
+                    return;
+                }
+                
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Level</th>
+                                <th>Airlines</th>
+                                <th>Last Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                data.users.forEach(user => {
+                    const statusClass = user.status === 'ACTIVE' ? 'status-active' : 
+                                       user.status === 'BANNED' ? 'status-banned' : 'status-inactive';
+                    const lastActive = user.last_active ? new Date(user.last_active).toLocaleString() : 'Never';
+                    const airlines = user.airlines || 'None';
+                    
+                    html += `
+                        <tr>
+                            <td>${user.id}</td>
+                            <td><strong>${user.user_name}</strong></td>
+                            <td>${user.email}</td>
+                            <td><span class="status-badge ${statusClass}">${user.status}</span></td>
+                            <td>${user.level}</td>
+                            <td>${airlines}</td>
+                            <td>${lastActive}</td>
+                            <td>
+                                <button class="btn btn-primary" onclick="viewUser(${user.id})">View</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+                // Update pagination
+                updatePagination(data.page, data.total_pages);
+                
+            } catch (error) {
+                console.error('Error loading users:', error);
+                container.innerHTML = '<div class="loading">Error loading users</div>';
+            }
+        }
+        
+        // Update pagination
+        function updatePagination(currentPage, totalPages) {
+            const pagination = document.getElementById('pagination');
+            let html = '';
+            
+            if (currentPage > 1) {
+                html += `<button onclick="changePage(${currentPage - 1})">Previous</button>`;
+            }
+            
+            html += `<span>Page ${currentPage} of ${totalPages}</span>`;
+            
+            if (currentPage < totalPages) {
+                html += `<button onclick="changePage(${currentPage + 1})">Next</button>`;
+            }
+            
+            pagination.innerHTML = html;
+        }
+        
+        // Change page
+        function changePage(page) {
+            currentPage = page;
+            const search = document.getElementById('search-box').value;
+            loadUsers(page, search);
+        }
+        
+        // View user details
+        async function viewUser(userId) {
+            const modal = document.getElementById('user-modal');
+            const modalBody = document.getElementById('modal-body');
+            const modalTitle = document.getElementById('modal-title');
+            
+            modal.style.display = 'flex';
+            modalBody.innerHTML = '<div class="loading">Loading user details...</div>';
+            
+            try {
+                const response = await fetch(`/api/users/${userId}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    modalBody.innerHTML = `<div class="loading">Error: ${data.error}</div>`;
+                    return;
+                }
+                
+                const user = data.user;
+                modalTitle.textContent = `User: ${user.user_name}`;
+                
+                let html = `
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">User ID</div>
+                            <div class="info-value">${user.id}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Username</div>
+                            <div class="info-value">${user.user_name}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Email</div>
+                            <div class="info-value">${user.email}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Status</div>
+                            <div class="info-value">${user.status}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Level</div>
+                            <div class="info-value">${user.level}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Admin Status</div>
+                            <div class="info-value">${user.admin_status || 'None'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Airlines</div>
+                            <div class="info-value">${user.airline_names || 'None'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Created</div>
+                            <div class="info-value">${new Date(user.creation_time).toLocaleString()}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Last Active</div>
+                            <div class="info-value">${new Date(user.last_active).toLocaleString()}</div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin-top: 25px; margin-bottom: 15px;">IP Addresses</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Occurrences</th>
+                                <th>Last Seen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                data.ips.forEach(ip => {
+                    html += `
+                        <tr>
+                            <td><strong>${ip.ip}</strong></td>
+                            <td>${ip.occurrence}</td>
+                            <td>${new Date(ip.last_update).toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                
+                if (data.modifiers.length > 0) {
+                    html += `<h3 style="margin-top: 25px; margin-bottom: 15px;">Modifiers</h3><ul>`;
+                    data.modifiers.forEach(mod => {
+                        html += `<li>${mod.modifier_name} (Cycle: ${mod.creation})</li>`;
+                    });
+                    html += '</ul>';
+                }
+                
+                modalBody.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading user details:', error);
+                modalBody.innerHTML = '<div class="loading">Error loading user details</div>';
+            }
+        }
+        
+        // Close modal
+        function closeModal() {
+            document.getElementById('user-modal').style.display = 'none';
+        }
+        
+        // Search users
+        document.getElementById('search-box').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentPage = 1;
+                loadUsers(1, e.target.value);
+            }, 500);
+        });
+        
+        // Update clock
+        function updateClock() {
+            document.getElementById('current-time').textContent = new Date().toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+        
+        // Close modal on outside click
+        document.getElementById('user-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'user-modal') {
+                closeModal();
+            }
+        });
+        
+        // Initial load
+        loadStats();
+        loadUsers();
+        
+        // Refresh stats every 60 seconds
+        setInterval(loadStats, 60000);
+    </script>
+</body>
+</html>
