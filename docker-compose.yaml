@@ -28,6 +28,7 @@ services:
       - "./.docker/start-all.sh:/home/airline/start-all.sh"
       - "./.docker/check-init-status.sh:/home/airline/check-init-status.sh"
       - "./.docker/wait-for-mysql.sh:/home/airline/wait-for-mysql.sh"
+      - "./airlines.csv:/root/airline/airlines.csv:ro"
     environment:
       DB_HOST: airline-db:3306
       DB_NAME: airline
