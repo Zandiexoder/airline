@@ -33,25 +33,63 @@ Live at https://myfly.club/
 2. Run `cp docker-compose.override.yaml.dist docker-compose.override.yaml` and edit ports if needed
 3. Start the stack: `docker compose up -d`
 4. Wait for all containers to be healthy: `docker compose ps`
-5. Initialize and start everything automatically:
+5. Initialize and start the application:
+
+   **⚡ Fast (Optimized - Recommended):**
+   ```bash
+   docker compose exec airline-app bash /home/airline/start-all-fast.sh
+   ```
+   - Smart initialization - skips unnecessary steps
+   - Checks if database already has data
+   - Only runs `publishLocal` if needed
+   - **Startup time**: 30-60 seconds on subsequent runs
+   - **Savings**: 2-5 minutes compared to standard startup!
+
+   **🐢 Standard (More Stable - First Time Use):**
    ```bash
    docker compose exec airline-app bash /home/airline/start-all.sh
    ```
-6. The application will be accessible at http://localhost:9000
+   - Always runs full initialization
+   - Always cleans and recompiles
+   - Always runs database migration
+   - **Startup time**: 3-6 minutes every time
+   - **Use when**: First time setup, or if fast version has issues
+
+6. The application will be accessible at:
+   - 🌐 **Main App**: http://localhost:9000
+   - 📊 **Admin Panel**: http://localhost:9001
 
 ### What's Improved?
 - ✅ **Reliable initialization** - No more spotty behavior! The init script now properly waits for MySQL and retries with exponential backoff
+- ✅ **Smart caching** - Fast startup skips unnecessary compilation if artifacts exist
+- ✅ **Database detection** - Automatically detects if initialization is needed
 - ✅ **Health checks** - Containers wait for dependencies to be ready
 - ✅ **Automated startup** - One command to init and start everything
 - ✅ **Better error messages** - Clear feedback when things go wrong
 - ✅ **Utility scripts** - Check status, troubleshoot issues easily
 
+### When to Use Each Version
+
+**Use Fast Version (`start-all-fast.sh`)** when:
+- ✅ Database is already initialized
+- ✅ You've already run setup once
+- ✅ You're restarting after code changes
+- ✅ You want quick development iteration
+- ✅ Running daily/regular startups
+
+**Use Standard Version (`start-all.sh`)** when:
+- ✅ First time setup
+- ✅ Database is corrupted or empty
+- ✅ Fast version encounters errors
+- ✅ You want to ensure clean state
+- ✅ Major version upgrades
+
 ### Manual Step-by-Step (if you prefer)
-4. Open shell: `docker compose exec airline-app bash`
-5. Run initialization: `bash init-data.sh` (robust retry logic - no more spotty behavior!)
-6. Start backend (separate terminal): `bash start-data.sh`
-7. Start frontend (separate terminal): `bash start-web.sh`
-8. Access at http://localhost:9000
+1. Open shell: `docker compose exec airline-app bash`
+2. Run initialization: `bash init-data.sh` (robust retry logic - no more spotty behavior!)
+3. Start backend (separate terminal): `bash start-data.sh`
+4. Start frontend (separate terminal): `bash start-web.sh`
+5. Access at http://localhost:9000
 
 
 ## Nginx Proxy w/ Cloudflare HTTPS
