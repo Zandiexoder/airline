@@ -35,7 +35,24 @@ object AirlineGenerator extends App {
   
   // Load airline names from airlines.csv
   private def loadAirlineNames(): Map[String, String] = {
-    val csvFile = scala.io.Source.fromFile("airlines.csv")
+    // Try multiple possible locations for the CSV file
+    val possiblePaths = Seq(
+      "airlines.csv",
+      "airline-data/airlines.csv",
+      "../airlines.csv",
+      "../../airlines.csv"
+    )
+    
+    val csvPath = possiblePaths.find(path => new java.io.File(path).exists()).getOrElse {
+      println(s"[WARNING] airlines.csv not found in any expected location. Checked: ${possiblePaths.mkString(", ")}")
+      println(s"[WARNING] Current working directory: ${System.getProperty("user.dir")}")
+      println("[WARNING] Bot airlines will use generic names")
+      return Map.empty[String, String]
+    }
+    
+    println(s"[INFO] Loading airline names from: $csvPath")
+    
+    val csvFile = scala.io.Source.fromFile(csvPath)
     try {
       val lines = csvFile.getLines().drop(1) // Skip header
       val countryData = CountrySource.loadAllCountries().map(c => (c.name, c.countryCode)).toMap

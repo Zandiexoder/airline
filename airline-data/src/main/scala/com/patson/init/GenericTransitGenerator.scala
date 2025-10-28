@@ -277,20 +277,28 @@ object GenericTransitGenerator {
         val capacity = (multiplier * 12000).toInt
         
         try {
-          val genericTransit = GenericTransit(
-            from = airport, 
-            to = targetAirport, 
-            distance = distance.toInt, 
-            capacity = LinkClassValues.getInstance(
-              economy = capacity, 
-              business = (capacity * 0.2).toInt
+          // Check if link already exists to avoid duplicates
+          val existingLink = LinkSource.loadLinksByCriteria(List(("from_airport", airport.id), ("to_airport", targetAirport.id), ("transport_type", 0)))
+          
+          if (existingLink.isEmpty) {
+            val genericTransit = GenericTransit(
+              from = airport, 
+              to = targetAirport, 
+              distance = distance.toInt, 
+              capacity = LinkClassValues.getInstance(
+                economy = capacity, 
+                business = (capacity * 0.2).toInt
+              )
             )
-          )
-          LinkSource.saveLink(genericTransit)
-          println(s"${airport.iata}, ${airport.countryCode}, ${targetAirport.iata}, ${targetAirport.countryCode}, $distance, $capacity")
+            LinkSource.saveLink(genericTransit)
+            println(s"${airport.iata}, ${airport.countryCode}, ${targetAirport.iata}, ${targetAirport.countryCode}, $distance, $capacity")
+          }
         } catch {
           case e: Exception => 
-            println(s"Error saving link between ${airport.iata} and ${targetAirport.iata}: ${e.getMessage}")
+            // Only log if it's not a duplicate key error
+            if (!e.getMessage.contains("Duplicate entry")) {
+              println(s"Error saving link between ${airport.iata} and ${targetAirport.iata}: ${e.getMessage}")
+            }
         }
       }
 
