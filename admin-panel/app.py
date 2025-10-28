@@ -8,6 +8,8 @@ from flask import Flask, render_template, jsonify, request
 import mysql.connector
 from datetime import datetime, timedelta
 import os
+import psutil
+import platform
 
 app = Flask(__name__)
 
@@ -290,6 +292,357 @@ def get_activity():
     finally:
         cursor.close()
         conn.close()
+
+@app.route('/api/server/resources')
+def get_server_resources():
+    """Get server resource usage (CPU, RAM, Disk)"""
+    try:
+        # CPU usage
+        cpu_percent = psutil.cpu_percent(interval=1)
+        cpu_count = psutil.cpu_count()
+        cpu_freq = psutil.cpu_freq()
+        
+        # Memory usage
+        memory = psutil.virtual_memory()
+        memory_total = memory.total / (1024 ** 3)  # GB
+        memory_used = memory.used / (1024 ** 3)    # GB
+        memory_percent = memory.percent
+        
+        # Disk usage
+        disk = psutil.disk_usage('/')
+        disk_total = disk.total / (1024 ** 3)  # GB
+        disk_used = disk.used / (1024 ** 3)    # GB
+        disk_percent = disk.percent
+        
+        # Swap memory
+        swap = psutil.swap_memory()
+        swap_total = swap.total / (1024 ** 3)  # GB
+        swap_used = swap.used / (1024 ** 3)    # GB
+        swap_percent = swap.percent
+        
+        # System uptime
+        boot_time = datetime.fromtimestamp(psutil.boot_time())
+        uptime = datetime.now() - boot_time
+        uptime_str = str(uptime).split('.')[0]  # Remove microseconds
+        
+        # Network info
+        net_io = psutil.net_io_counters()
+        bytes_sent = net_io.bytes_sent / (1024 ** 3)  # GB
+        bytes_recv = net_io.bytes_recv / (1024 ** 3)  # GB
+        
+        # Process count
+        process_count = len(psutil.pids())
+        
+        return jsonify({
+            'cpu': {
+                'percent': round(cpu_percent, 2),
+                'count': cpu_count,
+                'frequency': round(cpu_freq.current, 2) if cpu_freq else 0
+            },
+            'memory': {
+                'total': round(memory_total, 2),
+                'used': round(memory_used, 2),
+                'percent': round(memory_percent, 2)
+            },
+            'disk': {
+                'total': round(disk_total, 2),
+                'used': round(disk_used, 2),
+                'percent': round(disk_percent, 2)
+            },
+            'swap': {
+                'total': round(swap_total, 2),
+                'used': round(swap_used, 2),
+                'percent': round(swap_percent, 2)
+            },
+            'network': {
+                'sent': round(bytes_sent, 2),
+                'received': round(bytes_recv, 2)
+            },
+            'system': {
+                'uptime': uptime_str,
+                'boot_time': boot_time.isoformat(),
+                'process_count': process_count,
+                'platform': platform.system(),
+                'platform_release': platform.release()
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/database/stats')
+def get_database_stats():
+    """Get database statistics"""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        stats = {}
+        
+        # Total airlines
+        cursor.execute("SELECT COUNT(*) as count FROM airline")
+        stats['total_airlines'] = cursor.fetchone()['count']
+        
+        # Active airlines (with balance > 0)
+        cursor.execute("SELECT COUNT(*) as count FROM airline WHERE balance > 0")
+        stats['active_airlines'] = cursor.fetchone()['count']
+        
+        # Bot airlines
+        cursor.execute("SELECT COUNT(*) as count FROM airline WHERE airline_type = 2")
+        stats['bot_airlines'] = cursor.fetchone()['count']
+        
+        # Total airports
+        cursor.execute("SELECT COUNT(*) as count FROM airport")
+        stats['total_airports'] = cursor.fetchone()['count']
+        
+        # Total links/routes
+        cursor.execute("SELECT COUNT(*) as count FROM link")
+        stats['total_links'] = cursor.fetchone()['count']
+        
+        # Total airplanes
+        cursor.execute("SELECT COUNT(*) as count FROM airplane")
+        stats['total_airplanes'] = cursor.fetchone()['count']
+        
+        # In-flight airplanes
+        cursor.execute("SELECT COUNT(*) as count FROM airplane WHERE is_sold = 0")
+        stats['active_airplanes'] = cursor.fetchone()['count']
+        
+        # Database size
+        cursor.execute("""
+            SELECT 
+                ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as size_mb
+            FROM information_schema.TABLES
+            WHERE table_schema = %s
+        """, (DB_CONFIG['database'],))
+        result = cursor.fetchone()
+        stats['database_size_mb'] = result['size_mb'] if result['size_mb'] else 0
+        
+        # Current game cycle
+        cursor.execute("SELECT cycle FROM cycle ORDER BY id DESC LIMIT 1")
+        cycle_result = cursor.fetchone()
+        stats['current_cycle'] = cycle_result['cycle'] if cycle_result else 0
+        
+        # Total passenger count (last cycle)
+        cursor.execute("""
+            SELECT SUM(passenger_count) as total 
+            FROM link_consumption 
+            WHERE cycle = (SELECT MAX(cycle) FROM link_consumption)
+        """)
+        passenger_result = cursor.fetchone()
+        stats['last_cycle_passengers'] = passenger_result['total'] if passenger_result['total'] else 0
+        
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/game/activity')
+def get_game_activity():
+    """Get recent game activity"""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Recent airline creations
+        cursor.execute("""
+            SELECT name, balance, creation_time
+            FROM airline
+            ORDER BY id DESC
+            LIMIT 10
+        """)
+        recent_airlines = cursor.fetchall()
+        
+        for airline in recent_airlines:
+            if airline['creation_time']:
+                airline['creation_time'] = airline['creation_time'].isoformat()
+        
+        # Top airlines by balance
+        cursor.execute("""
+            SELECT name, balance, airline_type
+            FROM airline
+            WHERE airline_type != 2
+            ORDER BY balance DESC
+            LIMIT 10
+        """)
+        top_airlines = cursor.fetchall()
+        
+        # Busiest routes (last cycle)
+        cursor.execute("""
+            SELECT 
+                l.from_airport,
+                l.to_airport,
+                lc.passenger_count,
+                lc.cycle
+            FROM link_consumption lc
+            JOIN link l ON lc.link = l.id
+            WHERE lc.cycle = (SELECT MAX(cycle) FROM link_consumption)
+            ORDER BY lc.passenger_count DESC
+            LIMIT 10
+        """)
+        busiest_routes = cursor.fetchall()
+        
+        return jsonify({
+            'recent_airlines': recent_airlines,
+            'top_airlines': top_airlines,
+            'busiest_routes': busiest_routes
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/containers')
+def get_containers():
+    """Get Docker container status"""
+    try:
+        import subprocess
+        import json
+        
+        # Run docker ps command
+        result = subprocess.run(
+            ['docker', 'ps', '--format', '{{json .}}'],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        
+        if result.returncode != 0:
+            return jsonify({'error': 'Docker not available or no permissions'}), 500
+        
+        containers = []
+        for line in result.stdout.strip().split('\n'):
+            if line:
+                try:
+                    container = json.loads(line)
+                    containers.append({
+                        'name': container.get('Names', 'Unknown'),
+                        'image': container.get('Image', 'Unknown'),
+                        'status': container.get('Status', 'Unknown'),
+                        'ports': container.get('Ports', ''),
+                        'id': container.get('ID', '')[:12]
+                    })
+                except json.JSONDecodeError:
+                    continue
+        
+        return jsonify({'containers': containers})
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Docker command timeout'}), 500
+    except FileNotFoundError:
+        return jsonify({'error': 'Docker not installed'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/logs/recent')
+def get_recent_logs():
+    """Get recent system/application logs"""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Check if log table exists
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM information_schema.TABLES
+            WHERE table_schema = %s AND table_name = 'log'
+        """, (DB_CONFIG['database'],))
+        
+        if cursor.fetchone()['count'] == 0:
+            return jsonify({'logs': [], 'message': 'Log table not found'})
+        
+        # Get recent logs
+        cursor.execute("""
+            SELECT id, airline, category, log_time, message
+            FROM log
+            ORDER BY id DESC
+            LIMIT 50
+        """)
+        logs = cursor.fetchall()
+        
+        for log in logs:
+            if log['log_time']:
+                log['log_time'] = log['log_time'].isoformat()
+        
+        return jsonify({'logs': logs})
+    except Exception as e:
+        return jsonify({'error': str(e), 'logs': []}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/alerts')
+def get_alerts():
+    """Get system alerts and warnings"""
+    alerts = []
+    
+    try:
+        # Check CPU usage
+        cpu_percent = psutil.cpu_percent(interval=1)
+        if cpu_percent > 90:
+            alerts.append({
+                'level': 'critical',
+                'message': f'CPU usage is critically high: {cpu_percent}%',
+                'timestamp': datetime.now().isoformat()
+            })
+        elif cpu_percent > 75:
+            alerts.append({
+                'level': 'warning',
+                'message': f'CPU usage is high: {cpu_percent}%',
+                'timestamp': datetime.now().isoformat()
+            })
+        
+        # Check memory usage
+        memory = psutil.virtual_memory()
+        if memory.percent > 90:
+            alerts.append({
+                'level': 'critical',
+                'message': f'Memory usage is critically high: {memory.percent}%',
+                'timestamp': datetime.now().isoformat()
+            })
+        elif memory.percent > 75:
+            alerts.append({
+                'level': 'warning',
+                'message': f'Memory usage is high: {memory.percent}%',
+                'timestamp': datetime.now().isoformat()
+            })
+        
+        # Check disk usage
+        disk = psutil.disk_usage('/')
+        if disk.percent > 90:
+            alerts.append({
+                'level': 'critical',
+                'message': f'Disk usage is critically high: {disk.percent}%',
+                'timestamp': datetime.now().isoformat()
+            })
+        elif disk.percent > 80:
+            alerts.append({
+                'level': 'warning',
+                'message': f'Disk usage is high: {disk.percent}%',
+                'timestamp': datetime.now().isoformat()
+            })
+        
+        # Check database connection
+        try:
+            conn = get_db_connection()
+            conn.close()
+        except Exception as e:
+            alerts.append({
+                'level': 'critical',
+                'message': f'Database connection failed: {str(e)}',
+                'timestamp': datetime.now().isoformat()
+            })
+        
+        if not alerts:
+            alerts.append({
+                'level': 'info',
+                'message': 'All systems operational',
+                'timestamp': datetime.now().isoformat()
+            })
+        
+        return jsonify({'alerts': alerts})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=9001, debug=True)

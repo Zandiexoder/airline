@@ -31,6 +31,36 @@ object AirlineGenerator extends App {
   private lazy val airports = AirportSource.loadAllAirports(fullLoad = false, loadFeatures = true)
   private lazy val countryRelationships = CountrySource.getCountryMutualRelationships()
   private lazy val bufferOfAirplanes = mutable.Map[Model, (Airplane, Int)]()
+  private lazy val airlineNamesByCountry = loadAirlineNames()
+  
+  // Load airline names from airlines.csv
+  private def loadAirlineNames(): Map[String, String] = {
+    val csvFile = scala.io.Source.fromFile("airlines.csv")
+    try {
+      val lines = csvFile.getLines().drop(1) // Skip header
+      val countryData = CountrySource.loadAllCountries().map(c => (c.name, c.countryCode)).toMap
+      
+      lines.flatMap { line =>
+        val parts = line.split(",", 2)
+        if (parts.length == 2) {
+          val countryName = parts(0).trim
+          val airlineName = parts(1).trim
+          countryData.get(countryName).map(code => (code, airlineName))
+        } else None
+      }.toMap
+    } catch {
+      case e: Exception =>
+        println(s"Warning: Could not load airlines.csv: ${e.getMessage}")
+        Map.empty[String, String]
+    } finally {
+      csvFile.close()
+    }
+  }
+  
+  // Get airline name for a country code, with fallback
+  private def getAirlineName(countryCode: String, defaultName: String): String = {
+    airlineNamesByCountry.getOrElse(countryCode, defaultName)
+  }
 
   case class LinkConfig(description: String, poolSize: Int, linkCount: Int, rawQuality: Int)
   case class LinkGeneration(fromAirport: Airport, toAirports: List[Airport], models: List[Model], airline: Airline, config: LinkConfig)
@@ -68,8 +98,9 @@ object AirlineGenerator extends App {
     countryCodes.foreach(countryCode => {
       val bases = airports.filterNot(_.isDomesticAirport()).filter(_.countryCode == countryCode).takeRight(11).reverse
       val toAirports = airports.filter(_.countryCode == countryCode)
+      val airlineName = getAirlineName(countryCode, s"Rats ${countryCode}")
       generateAirline(
-        s"Rats ${countryCode}",
+        airlineName,
         s"R${countryCode}",
         bases.head,
         bases.tail,
@@ -85,8 +116,9 @@ object AirlineGenerator extends App {
     countryCodes.foreach(countryCode => {
       val bases = airports.filterNot(_.isDomesticAirport()).filter(_.countryCode == countryCode).takeRight(8).reverse
       val toAirports = airports.filter(_.countryCode == countryCode)
+      val airlineName = getAirlineName(countryCode, s"Rats ${countryCode}")
       generateAirline(
-        s"Rats ${countryCode}",
+        airlineName,
         s"R${countryCode}",
         bases.head,
         bases.tail,
@@ -102,8 +134,9 @@ object AirlineGenerator extends App {
     countryCodes.foreach(countryCode => {
       val bases = airports.filterNot(_.isDomesticAirport()).filter(_.countryCode == countryCode).takeRight(6).reverse
       val toAirports = airports.filter(_.countryCode == countryCode)
+      val airlineName = getAirlineName(countryCode, s"Rats ${countryCode}")
       generateAirline(
-        s"Rats ${countryCode}",
+        airlineName,
         s"R${countryCode}",
         bases.head,
         bases.tail,
@@ -119,8 +152,18 @@ object AirlineGenerator extends App {
     affinities.foreach(affinity => {
       val bases = airports.filterNot(_.isDomesticAirport()).filter(_.zone.contains(affinity)).takeRight(11).reverse
       val toAirports = airports.filterNot(_.isDomesticAirport()).filter(_.zone.contains(affinity))
+      val airlineName = affinity match {
+        case "EU" => "EuroWings Alliance"
+        case "Banking" => "Capital Airways"
+        case "Oil" => "Petroleum Air"
+        case "Pharma" => "MediFlight International"
+        case "Electronics" => "TechConnect Air"
+        case "Copper" => "Mineral Express"
+        case "Marine" => "Ocean Freight Airways"
+        case _ => s"${affinity} Rats"
+      }
       generateAirline(
-        s"${affinity} Rats",
+        airlineName,
         s"${affinity}",
         bases.head,
         bases.tail,
@@ -137,8 +180,15 @@ object AirlineGenerator extends App {
     val toAirports = airports.filter(port => port.zone.contains("Aerospace") || port.zone.contains("Space") || port.zone.contains("Software") || port.size >= 7).distinct
     val HQ = airports.find(_.iata == "TLS").getOrElse(bases.head)
     println(HQ)
+    // Use HQ country's airline name (TLS = France), add Executive designation
+    val mainAirlineName = getAirlineName(HQ.countryCode, "Airbus Executive")
+    val airlineName = if (mainAirlineName.contains("Airlines") || mainAirlineName.contains("Airways")) {
+      mainAirlineName.replace(" Airlines", " Executive").replace(" Airways", " Executive")
+    } else {
+      s"${mainAirlineName} Executive"
+    }
     generateAirline(
-      s"Aerospace Rats",
+      airlineName,
       s"Aerospace",
       HQ,
       bases,
@@ -152,8 +202,15 @@ object AirlineGenerator extends App {
   def generateSSTAirline(): Unit = {
     val bases = airports.filter(airport => airport.iata == "ORD" || airport.iata == "SFO" || airport.iata == "BOS" || airport.iata == "FAI" || airport.iata == "ANC" || airport.iata == "BET")
     val HQ = airports.find(_.iata == "JFK").getOrElse(bases.head)
+    // Use HQ country's airline name (JFK = US), add SST designation
+    val mainAirlineName = getAirlineName(HQ.countryCode, "Concorde Airways")
+    val airlineName = if (mainAirlineName.contains("Airlines") || mainAirlineName.contains("Airways")) {
+      mainAirlineName.replace(" Airlines", " Supersonic").replace(" Airways", " Supersonic")
+    } else {
+      s"${mainAirlineName} SST"
+    }
     generateAirline(
-      s"Y",
+      airlineName,
       s"y",
       HQ,
       bases,
@@ -167,7 +224,7 @@ object AirlineGenerator extends App {
   def generatePacificAirline(): Unit = {
     val bases = airports.filter(airport => airport.zone.contains("PIF") && airport.isGateway() && airport.countryCode != "AU" && airport.countryCode != "NZ" && airport.countryCode != "US").takeRight(7).reverse
     generateAirline(
-      s"Echo Pacific",
+      s"Pacific Island Airways",
       s"echopacific",
       bases.head,
       bases.tail,
@@ -182,8 +239,10 @@ object AirlineGenerator extends App {
     val bases = airports.filter(airport => airport.zone.contains("Arabic")).takeRight(7).reverse
     val destinations = List("IST", "FRA", "BER", "IKA", "SVO", "LHR", "SIN")
     val toAirports = airports.filter(port => port.zone.contains("Sunni") || destinations.contains(port.iata)).distinct
+    // Use the first base's country airline name
+    val airlineName = getAirlineName(bases.head.countryCode, "Emirates Gulf Air")
     generateAirline(
-      s"ONE Arabia",
+      airlineName,
       s"onearabia",
       bases.head,
       bases.tail,
@@ -198,8 +257,10 @@ object AirlineGenerator extends App {
     val bases = airports.filter(airport => airport.zone.contains("Hispanic") && airport.isGateway() && airport.countryCode != "US").takeRight(7).reverse
     val HQ = airports.find(_.iata == "GRU").getOrElse(bases.head)
     val toAirports = airports.filter(port => port.zone.contains("Hispanic") || port.zone.contains("Lusophone")).distinct
+    // Use Brazil's airline name since HQ is in GRU (São Paulo)
+    val airlineName = getAirlineName(HQ.countryCode, "Aerolíneas del Sur")
     generateAirline(
-      s"Echo LATAM",
+      airlineName,
       s"echolatam",
       HQ,
       bases,
@@ -214,8 +275,10 @@ object AirlineGenerator extends App {
     val bases = airports.filter(airport => airport.zone.contains("CC") && airport.isGateway() && airport.countryCode != "US").takeRight(6).reverse
     val HQ = airports.find(_.iata == "MIA").getOrElse(bases.head)
     val toAirports = airports.filter(port => port.zone.contains("CC")).distinct
+    // Use HQ country's airline name (Miami = US)
+    val airlineName = getAirlineName(HQ.countryCode, "Caribbean Star Airlines")
     generateAirline(
-      s"Echo Caribbean",
+      airlineName,
       s"echocaribbean",
       HQ,
       bases,
@@ -230,8 +293,11 @@ object AirlineGenerator extends App {
     countryCodes.foreach(countryCode => {
       val bases = airports.filter(_.countryCode == countryCode).filter(_.popMiddleIncome <= 9000).takeRight(7)
       val toAirports = airports.filter(_.countryCode == countryCode).filter(_.popMiddleIncome <= 50000)
+      // For remote airlines, add a regional suffix to distinguish from main carrier
+      val mainAirlineName = getAirlineName(countryCode, s"Rats ${countryCode}")
+      val airlineName = if (mainAirlineName.contains("Rats")) mainAirlineName else s"${mainAirlineName} Regional"
       generateAirline(
-        s"Rats ${countryCode}",
+        airlineName,
         s"rr${countryCode}",
         bases.head,
         bases.tail,
@@ -252,6 +318,15 @@ object AirlineGenerator extends App {
     UserSource.setUserAirline(user, airline)
     AirlineSource.saveAirlineInfo(airline, false)
     AirlineSource.saveAirplaneRenewal(airline.id, 60)
+    
+    // Generate and save logo for the airline
+    try {
+      val logo = LogoGenerator.generateRandomLogo()
+      AirlineSource.saveLogo(airline.id, logo)
+      println(s"Generated logo for ${name}")
+    } catch {
+      case e: Exception => println(s"Failed to generate logo for ${name}: ${e.getMessage}")
+    }
 
     // Generate bases & links
     makeBase(airline, hqAirport, true)

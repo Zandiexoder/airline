@@ -262,6 +262,149 @@
             font-weight: 600;
             color: #2c3e50;
         }
+        
+        .resource-bar {
+            width: 100%;
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .resource-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .resource-fill.low {
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+        }
+        
+        .resource-fill.medium {
+            background: linear-gradient(90deg, #f39c12, #f1c40f);
+        }
+        
+        .resource-fill.high {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+        
+        .system-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .system-info-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .system-info-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .system-info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .alert-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border-left: 4px solid #0c5460;
+            color: #0c5460;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid #856404;
+            color: #856404;
+        }
+        
+        .alert-critical {
+            background: #f8d7da;
+            border-left: 4px solid #721c24;
+            color: #721c24;
+        }
+        
+        .container-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 5px 5px 5px 0;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .log-entry {
+            padding: 10px;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 13px;
+        }
+        
+        .log-time {
+            color: #7f8c8d;
+            font-size: 11px;
+        }
+        
+        .log-message {
+            margin-top: 5px;
+            color: #2c3e50;
+        }
+        
+        .two-column-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 1200px) {
+            .two-column-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .mini-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .mini-stat-label {
+            color: #7f8c8d;
+            font-size: 13px;
+        }
+        
+        .mini-stat-value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
     </style>
 </head>
 <body>
@@ -288,6 +431,115 @@
             <div class="stat-card">
                 <div class="stat-label">Current Time</div>
                 <div class="stat-value" id="current-time" style="font-size: 18px;">-</div>
+            </div>
+        </div>
+        
+        <!-- Server Resources -->
+        <div class="section">
+            <h2 class="section-title">🖥️ Server Resources</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">CPU Usage</div>
+                    <div class="stat-value" id="cpu-percent" style="font-size: 28px;">-</div>
+                    <div class="resource-bar">
+                        <div class="resource-fill" id="cpu-bar"></div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-label">Memory Usage</div>
+                    <div class="stat-value" id="memory-percent" style="font-size: 28px;">-</div>
+                    <div class="resource-bar">
+                        <div class="resource-fill" id="memory-bar"></div>
+                    </div>
+                    <div style="font-size: 12px; color: #7f8c8d; margin-top: 8px;" id="memory-details">-</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-label">Disk Usage</div>
+                    <div class="stat-value" id="disk-percent" style="font-size: 28px;">-</div>
+                    <div class="resource-bar">
+                        <div class="resource-fill" id="disk-bar"></div>
+                    </div>
+                    <div style="font-size: 12px; color: #7f8c8d; margin-top: 8px;" id="disk-details">-</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-label">Network I/O</div>
+                    <div style="font-size: 14px; margin-top: 10px;">
+                        <div style="margin-bottom: 8px;">
+                            <span style="color: #27ae60;">⬆ Sent:</span> <strong id="network-sent">-</strong>
+                        </div>
+                        <div>
+                            <span style="color: #3498db;">⬇ Received:</span> <strong id="network-recv">-</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="system-info">
+                <div class="system-info-item">
+                    <div class="system-info-label">System Uptime</div>
+                    <div class="system-info-value" id="uptime">-</div>
+                </div>
+                <div class="system-info-item">
+                    <div class="system-info-label">CPU Cores</div>
+                    <div class="system-info-value" id="cpu-count">-</div>
+                </div>
+                <div class="system-info-item">
+                    <div class="system-info-label">Active Processes</div>
+                    <div class="system-info-value" id="process-count">-</div>
+                </div>
+                <div class="system-info-item">
+                    <div class="system-info-label">Platform</div>
+                    <div class="system-info-value" id="platform">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alerts -->
+        <div class="section">
+            <h2 class="section-title">🚨 System Alerts</h2>
+            <div id="alerts-container">
+                <div class="loading">Loading alerts...</div>
+            </div>
+        </div>
+        
+        <!-- Two Column Layout for Database Stats and Game Activity -->
+        <div class="two-column-grid">
+            <!-- Database Statistics -->
+            <div class="section">
+                <h2 class="section-title">📊 Database Statistics</h2>
+                <div id="database-stats-container">
+                    <div class="loading">Loading database stats...</div>
+                </div>
+            </div>
+            
+            <!-- Game Activity -->
+            <div class="section">
+                <h2 class="section-title">🎮 Game Activity</h2>
+                <div id="game-activity-container">
+                    <div class="loading">Loading game activity...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Container Status -->
+        <div class="section">
+            <h2 class="section-title">🐳 Docker Containers</h2>
+            <div id="containers-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+                <div class="loading">Loading containers...</div>
+            </div>
+        </div>
+        
+        <!-- Recent Logs -->
+        <div class="section">
+            <h2 class="section-title">📝 Recent Logs</h2>
+            <div style="max-height: 400px; overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #ecf0f1;">
+                <div id="logs-container">
+                    <div class="loading">Loading logs...</div>
+                </div>
             </div>
         </div>
         
@@ -545,6 +797,64 @@
         setInterval(updateClock, 1000);
         updateClock();
         
+        // Load server resources
+        async function loadServerResources() {
+            try {
+                const response = await fetch('/api/server/resources');
+                const data = await response.json();
+                
+                // Update CPU
+                const cpuPercent = data.cpu.percent;
+                document.getElementById('cpu-percent').textContent = `${cpuPercent}%`;
+                updateResourceBar('cpu-bar', cpuPercent);
+                document.getElementById('cpu-count').textContent = `${data.cpu.count} cores`;
+                
+                // Update Memory
+                const memPercent = data.memory.percent;
+                document.getElementById('memory-percent').textContent = `${memPercent}%`;
+                updateResourceBar('memory-bar', memPercent);
+                document.getElementById('memory-details').textContent = 
+                    `${data.memory.used} GB / ${data.memory.total} GB`;
+                
+                // Update Disk
+                const diskPercent = data.disk.percent;
+                document.getElementById('disk-percent').textContent = `${diskPercent}%`;
+                updateResourceBar('disk-bar', diskPercent);
+                document.getElementById('disk-details').textContent = 
+                    `${data.disk.used} GB / ${data.disk.total} GB`;
+                
+                // Update Network
+                document.getElementById('network-sent').textContent = `${data.network.sent} GB`;
+                document.getElementById('network-recv').textContent = `${data.network.received} GB`;
+                
+                // Update System Info
+                document.getElementById('uptime').textContent = data.system.uptime;
+                document.getElementById('process-count').textContent = data.system.process_count.toLocaleString();
+                document.getElementById('platform').textContent = 
+                    `${data.system.platform} ${data.system.platform_release}`;
+                
+            } catch (error) {
+                console.error('Error loading server resources:', error);
+            }
+        }
+        
+        // Update resource bar with color coding
+        function updateResourceBar(barId, percent) {
+            const bar = document.getElementById(barId);
+            bar.style.width = `${percent}%`;
+            bar.textContent = `${percent}%`;
+            
+            // Color code based on usage
+            bar.className = 'resource-fill';
+            if (percent < 60) {
+                bar.classList.add('low');
+            } else if (percent < 85) {
+                bar.classList.add('medium');
+            } else {
+                bar.classList.add('high');
+            }
+        }
+        
         // Close modal on outside click
         document.getElementById('user-modal').addEventListener('click', (e) => {
             if (e.target.id === 'user-modal') {
@@ -552,12 +862,230 @@
             }
         });
         
+        // Load alerts
+        async function loadAlerts() {
+            try {
+                const response = await fetch('/api/alerts');
+                const data = await response.json();
+                const container = document.getElementById('alerts-container');
+                
+                if (data.alerts.length === 0) {
+                    container.innerHTML = '<div class="alert-box alert-info">✅ All systems operational</div>';
+                    return;
+                }
+                
+                let html = '';
+                data.alerts.forEach(alert => {
+                    const alertClass = `alert-${alert.level}`;
+                    const icon = alert.level === 'critical' ? '🔴' : 
+                                alert.level === 'warning' ? '⚠️' : 'ℹ️';
+                    html += `
+                        <div class="alert-box ${alertClass}">
+                            <span style="font-size: 20px;">${icon}</span>
+                            <div>
+                                <strong>${alert.message}</strong>
+                                <div class="log-time">${new Date(alert.timestamp).toLocaleString()}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+                document.getElementById('alerts-container').innerHTML = 
+                    '<div class="alert-box alert-warning">⚠️ Unable to load alerts</div>';
+            }
+        }
+        
+        // Load database stats
+        async function loadDatabaseStats() {
+            try {
+                const response = await fetch('/api/database/stats');
+                const data = await response.json();
+                const container = document.getElementById('database-stats-container');
+                
+                const html = `
+                    <div class="mini-stat">
+                        <span class="mini-stat-label">Total Airlines</span>
+                        <span class="mini-stat-value">${data.total_airlines.toLocaleString()}</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-label">Bot Airlines</span>
+                        <span class="mini-stat-value">${data.bot_airlines.toLocaleString()}</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-label">Total Airports</span>
+                        <span class="mini-stat-value">${data.total_airports.toLocaleString()}</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-label">Active Routes</span>
+                        <span class="mini-stat-value">${data.total_links.toLocaleString()}</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-label">Total Airplanes</span>
+                        <span class="mini-stat-value">${data.total_airplanes.toLocaleString()}</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-label">Database Size</span>
+                        <span class="mini-stat-value">${data.database_size_mb.toFixed(2)} MB</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-label">Current Cycle</span>
+                        <span class="mini-stat-value">${data.current_cycle.toLocaleString()}</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-stat-label">Last Cycle Passengers</span>
+                        <span class="mini-stat-value">${data.last_cycle_passengers.toLocaleString()}</span>
+                    </div>
+                `;
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading database stats:', error);
+                document.getElementById('database-stats-container').innerHTML = 
+                    '<div class="loading">Error loading database stats</div>';
+            }
+        }
+        
+        // Load game activity
+        async function loadGameActivity() {
+            try {
+                const response = await fetch('/api/game/activity');
+                const data = await response.json();
+                const container = document.getElementById('game-activity-container');
+                
+                let html = '<h3 style="margin-top: 0; font-size: 14px; color: #7f8c8d;">Recent Airlines</h3>';
+                if (data.recent_airlines.length > 0) {
+                    html += '<div style="margin-bottom: 20px;">';
+                    data.recent_airlines.forEach(airline => {
+                        html += `<div style="padding: 8px; background: #f8f9fa; margin-bottom: 5px; border-radius: 4px; font-size: 13px;">
+                            <strong>${airline.name}</strong> - ${airline.country_code}
+                            <span class="log-time">${new Date(airline.created).toLocaleString()}</span>
+                        </div>`;
+                    });
+                    html += '</div>';
+                } else {
+                    html += '<div style="color: #7f8c8d; font-size: 13px; margin-bottom: 20px;">No recent airlines</div>';
+                }
+                
+                html += '<h3 style="font-size: 14px; color: #7f8c8d;">Top Airlines by Balance</h3>';
+                if (data.top_airlines.length > 0) {
+                    data.top_airlines.slice(0, 5).forEach((airline, index) => {
+                        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                        html += `<div style="padding: 8px; background: #f8f9fa; margin-bottom: 5px; border-radius: 4px; font-size: 13px;">
+                            ${medal} <strong>${airline.name}</strong> - $${airline.balance.toLocaleString()}
+                        </div>`;
+                    });
+                } else {
+                    html += '<div style="color: #7f8c8d; font-size: 13px;">No airlines found</div>';
+                }
+                
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading game activity:', error);
+                document.getElementById('game-activity-container').innerHTML = 
+                    '<div class="loading">Error loading game activity</div>';
+            }
+        }
+        
+        // Load containers
+        async function loadContainers() {
+            try {
+                const response = await fetch('/api/containers');
+                const data = await response.json();
+                const container = document.getElementById('containers-grid');
+                
+                if (data.containers.length === 0) {
+                    container.innerHTML = '<div class="loading">No containers found</div>';
+                    return;
+                }
+                
+                let html = '';
+                data.containers.forEach(c => {
+                    const statusColor = c.status.toLowerCase().includes('up') ? '#27ae60' : '#e74c3c';
+                    html += `
+                        <div class="stat-card">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                <div style="font-weight: 600; font-size: 14px;">${c.name}</div>
+                                <div style="width: 10px; height: 10px; border-radius: 50%; background: ${statusColor};"></div>
+                            </div>
+                            <div class="container-badge">${c.image}</div>
+                            <div style="font-size: 12px; color: #7f8c8d; margin-top: 10px;">
+                                Status: <strong style="color: ${statusColor};">${c.status}</strong>
+                            </div>
+                            <div style="font-size: 11px; color: #95a5a6; margin-top: 5px;">
+                                ${c.id.substring(0, 12)}
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading containers:', error);
+                document.getElementById('containers-grid').innerHTML = 
+                    '<div class="loading">Error loading containers</div>';
+            }
+        }
+        
+        // Load logs
+        async function loadLogs() {
+            try {
+                const response = await fetch('/api/logs/recent');
+                const data = await response.json();
+                const container = document.getElementById('logs-container');
+                
+                if (data.logs.length === 0) {
+                    container.innerHTML = '<div style="padding: 20px; text-align: center; color: #7f8c8d;">No recent logs</div>';
+                    return;
+                }
+                
+                let html = '';
+                data.logs.forEach(log => {
+                    const airlineInfo = log.airline_id ? `[Airline ${log.airline_id}] ` : '';
+                    html += `
+                        <div class="log-entry">
+                            <div class="log-time">${new Date(log.log_time).toLocaleString()} - ${log.category}</div>
+                            <div class="log-message">${airlineInfo}${log.message}</div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                document.getElementById('logs-container').innerHTML = 
+                    '<div style="padding: 20px; text-align: center; color: #e74c3c;">Error loading logs</div>';
+            }
+        }
+        
         // Initial load
         loadStats();
         loadUsers();
+        loadServerResources();
+        loadAlerts();
+        loadDatabaseStats();
+        loadGameActivity();
+        loadContainers();
+        loadLogs();
         
         // Refresh stats every 60 seconds
         setInterval(loadStats, 60000);
+        
+        // Refresh server resources every 5 seconds
+        setInterval(loadServerResources, 5000);
+        
+        // Refresh alerts every 30 seconds
+        setInterval(loadAlerts, 30000);
+        
+        // Refresh database stats and game activity every 60 seconds
+        setInterval(() => {
+            loadDatabaseStats();
+            loadGameActivity();
+        }, 60000);
+        
+        // Refresh containers every 10 seconds
+        setInterval(loadContainers, 10000);
+        
+        // Refresh logs every 30 seconds
+        setInterval(loadLogs, 30000);
     </script>
 </body>
 </html>

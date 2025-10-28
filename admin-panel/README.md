@@ -4,6 +4,7 @@ A lightweight Python/Flask admin panel for monitoring and managing users in the 
 
 ## Features
 
+### User Management
 - **Dashboard Overview**: Real-time statistics of total, active, and new users
 - **User Management**: View all user accounts with search and pagination
 - **User Details**: Detailed view of individual users including:
@@ -13,7 +14,25 @@ A lightweight Python/Flask admin panel for monitoring and managing users in the 
   - UUIDs associated with the account
   - Airlines owned by the user
 - **IP Tracking**: See all IP addresses a user has logged in from
+
+### Server Monitoring
+- **CPU Usage**: Real-time CPU utilization with color-coded progress bars
+- **Memory Usage**: RAM consumption with used/total display
+- **Disk Usage**: Storage space monitoring
+- **Network I/O**: Total data sent and received
+- **System Information**:
+  - System uptime
+  - CPU core count
+  - Active process count
+  - Platform information
+
+### User Interface
 - **Beautiful UI**: Modern, responsive design with smooth animations
+- **Real-time Updates**: Server resources update every 5 seconds
+- **Color Coding**: Visual indicators for resource usage levels
+  - 🟢 Green: < 60% (healthy)
+  - 🟡 Yellow: 60-85% (warning)
+  - 🔴 Red: > 85% (critical)
 
 ## Access
 
@@ -66,6 +85,7 @@ python app.py
 
 - **Backend**: Python 3.11 + Flask
 - **Database**: MySQL (connects to existing airline database)
+- **System Monitoring**: psutil (cross-platform system and process utilities)
 - **Frontend**: Pure HTML/CSS/JavaScript (no frameworks)
 - **Port**: 9001
 
