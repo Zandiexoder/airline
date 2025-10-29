@@ -5,7 +5,7 @@
  * It wraps Leaflet functionality to mimic some Google Maps API patterns.
  */
 
-console.log('✅ Leaflet Adapter v3.2 loaded - setIcon and popup.close fixes');
+console.log('✅ Leaflet Adapter v3.4 loaded - addListener for polylines (route viewer support)');
 
 // Geometry helper functions (replaces google.maps.geometry.spherical)
 const LeafletGeometry = {
@@ -482,6 +482,10 @@ if (typeof google.maps === 'undefined') {
                     return marker;
                 };
                 
+                marker.getOpacity = function() {
+                    return marker.options.opacity;
+                };
+                
                 marker.setIcon = function(icon) {
                     // Handle both string URLs and Google Maps icon objects
                     var leafletIcon;
@@ -588,6 +592,50 @@ if (typeof google.maps === 'undefined') {
                     return { lat: ll.lat, lng: ll.lng };
                 });
             };
+            
+            polyline.setOptions = function(options) {
+                // Update polyline style options
+                if (options.strokeColor !== undefined) {
+                    polyline.setStyle({ color: options.strokeColor });
+                }
+                if (options.strokeWeight !== undefined) {
+                    polyline.setStyle({ weight: options.strokeWeight });
+                }
+                if (options.strokeOpacity !== undefined) {
+                    polyline.setStyle({ opacity: options.strokeOpacity });
+                }
+                // Store custom properties
+                if (options.zIndex !== undefined) {
+                    polyline.zIndex = options.zIndex;
+                    if (polyline._path) {
+                        polyline._path.style.zIndex = options.zIndex;
+                    }
+                }
+                return polyline;
+            };
+            
+            polyline.addListener = function(eventName, handler) {
+                // Map Google Maps events to Leaflet events
+                var leafletEvent = eventName;
+                if (eventName === 'click') {
+                    leafletEvent = 'click';
+                } else if (eventName === 'mouseover') {
+                    leafletEvent = 'mouseover';
+                } else if (eventName === 'mouseout') {
+                    leafletEvent = 'mouseout';
+                }
+                polyline.on(leafletEvent, handler);
+                return polyline;
+            };
+            
+            // Copy all custom properties from options to polyline
+            // This preserves properties like link, originalZIndex, etc.
+            for (var key in options) {
+                if (options.hasOwnProperty(key) && 
+                    !['path', 'map', 'strokeColor', 'strokeWeight', 'strokeOpacity'].includes(key)) {
+                    polyline[key] = options[key];
+                }
+            }
             
             // Add to map if specified
             if (options.map) {
