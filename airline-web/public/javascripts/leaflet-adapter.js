@@ -5,7 +5,7 @@
  * It wraps Leaflet functionality to mimic some Google Maps API patterns.
  */
 
-console.log('✅ Leaflet Adapter v3.0 loaded - with setZIndex, setOpacity, addListener fixes');
+console.log('✅ Leaflet Adapter v3.1 loaded - Custom properties support added');
 
 // Geometry helper functions (replaces google.maps.geometry.spherical)
 const LeafletGeometry = {
@@ -439,8 +439,6 @@ if (typeof google.maps === 'undefined') {
                 
                 marker = L.marker(latlng, markerOptions);
                 
-                console.log('🔵 Created Leaflet marker, adding compatibility methods...');
-                
                 // Add compatibility methods
                 marker.setVisible = function(visible) {
                     if (visible) {
@@ -478,8 +476,6 @@ if (typeof google.maps === 'undefined') {
                     return marker;
                 };
                 
-                console.log('✅ Added setZIndex method, type:', typeof marker.setZIndex);
-                
                 marker.setOpacity = function(opacity) {
                     leafletSetOpacity(opacity);
                     return marker;
@@ -498,6 +494,19 @@ if (typeof google.maps === 'undefined') {
                     marker.on(leafletEvent, handler);
                     return marker;
                 };
+                
+                // Copy all custom properties from options to marker
+                // This preserves properties like airport, airportName, championIcon, etc.
+                for (var key in options) {
+                    if (options.hasOwnProperty(key) && 
+                        !['position', 'map', 'title', 'icon', 'opacity'].includes(key)) {
+                        marker[key] = options[key];
+                    }
+                }
+                
+                console.log('✅ Marker created with custom properties:', 
+                    'airport:', marker.airport ? marker.airport.name : 'none',
+                    'isBase:', marker.isBase);
                 
                 // Add to map if specified
                 if (options.map) {
