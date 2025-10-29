@@ -5,7 +5,7 @@
  * It wraps Leaflet functionality to mimic some Google Maps API patterns.
  */
 
-console.log('✅ Leaflet Adapter v3.1 loaded - Custom properties support added');
+console.log('✅ Leaflet Adapter v3.2 loaded - setIcon and popup.close fixes');
 
 // Geometry helper functions (replaces google.maps.geometry.spherical)
 const LeafletGeometry = {
@@ -467,6 +467,7 @@ if (typeof google.maps === 'undefined') {
                 
                 // Store original Leaflet methods before overriding
                 var leafletSetOpacity = marker.setOpacity.bind(marker);
+                var leafletSetIcon = marker.setIcon.bind(marker);
                 
                 marker.setZIndex = function(zIndex) {
                     if (marker._icon) {
@@ -478,6 +479,38 @@ if (typeof google.maps === 'undefined') {
                 
                 marker.setOpacity = function(opacity) {
                     leafletSetOpacity(opacity);
+                    return marker;
+                };
+                
+                marker.setIcon = function(icon) {
+                    // Handle both string URLs and Google Maps icon objects
+                    var leafletIcon;
+                    if (typeof icon === 'string') {
+                        leafletIcon = L.icon({
+                            iconUrl: icon,
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 32],
+                            popupAnchor: [0, -32]
+                        });
+                    } else if (icon && icon.url) {
+                        leafletIcon = L.icon({
+                            iconUrl: icon.url,
+                            iconSize: icon.scaledSize ? 
+                                [icon.scaledSize.width, icon.scaledSize.height] : 
+                                [32, 32],
+                            iconAnchor: icon.anchor ? 
+                                [icon.anchor.x, icon.anchor.y] : 
+                                [16, 32],
+                            popupAnchor: [0, -32]
+                        });
+                    } else if (icon && icon.options && icon.options.iconUrl) {
+                        // Already a Leaflet icon, use as-is
+                        leafletIcon = icon;
+                    } else {
+                        // Fallback to default icon
+                        leafletIcon = new L.Icon.Default();
+                    }
+                    leafletSetIcon(leafletIcon);
                     return marker;
                 };
                 
@@ -605,7 +638,8 @@ if (typeof google.maps === 'undefined') {
             
             popup.close = function() {
                 if (popup._map) {
-                    popup._map.closePopup(popup);
+                    // Call Leaflet's native remove method to avoid recursion
+                    popup.remove();
                 }
                 return popup;
             };
