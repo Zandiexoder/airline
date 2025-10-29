@@ -519,6 +519,60 @@ if (typeof google.maps === 'undefined') {
             return polyline;
         },
         
+        // InfoWindow constructor wrapper (popup)
+        InfoWindow: function(options) {
+            options = options || {};
+            
+            var popup = L.popup({
+                maxWidth: options.maxWidth || 300,
+                minWidth: options.minWidth || 50,
+                maxHeight: options.maxHeight || null,
+                autoPan: options.autoPan !== false,
+                closeButton: true,
+                autoClose: false,
+                closeOnEscapeKey: true,
+                className: 'leaflet-google-popup'
+            });
+            
+            // Store content
+            popup._content = options.content || '';
+            popup.marker = null;
+            
+            // Add compatibility methods
+            popup.setContent = function(content) {
+                popup._content = content;
+                L.Popup.prototype.setContent.call(popup, content);
+                return popup;
+            };
+            
+            popup.getContent = function() {
+                return popup._content;
+            };
+            
+            popup.open = function(map, marker) {
+                popup.marker = marker;
+                if (marker && marker.getLatLng) {
+                    popup.setLatLng(marker.getLatLng());
+                }
+                popup.openOn(map);
+                return popup;
+            };
+            
+            popup.close = function() {
+                if (popup._map) {
+                    popup._map.closePopup(popup);
+                }
+                return popup;
+            };
+            
+            // Set initial content if provided
+            if (options.content) {
+                popup.setContent(options.content);
+            }
+            
+            return popup;
+        },
+        
         // Event system wrapper
         event: {
             addListener: function(instance, eventName, handler) {
