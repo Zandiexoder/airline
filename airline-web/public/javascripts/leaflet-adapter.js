@@ -5,6 +5,8 @@
  * It wraps Leaflet functionality to mimic some Google Maps API patterns.
  */
 
+console.log('✅ Leaflet Adapter v3.0 loaded - with setZIndex, setOpacity, addListener fixes');
+
 // Geometry helper functions (replaces google.maps.geometry.spherical)
 const LeafletGeometry = {
     /**
@@ -437,6 +439,8 @@ if (typeof google.maps === 'undefined') {
                 
                 marker = L.marker(latlng, markerOptions);
                 
+                console.log('🔵 Created Leaflet marker, adding compatibility methods...');
+                
                 // Add compatibility methods
                 marker.setVisible = function(visible) {
                     if (visible) {
@@ -473,6 +477,8 @@ if (typeof google.maps === 'undefined') {
                     marker._zIndex = zIndex;
                     return marker;
                 };
+                
+                console.log('✅ Added setZIndex method, type:', typeof marker.setZIndex);
                 
                 marker.setOpacity = function(opacity) {
                     leafletSetOpacity(opacity);
