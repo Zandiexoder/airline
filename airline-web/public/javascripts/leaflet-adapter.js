@@ -463,6 +463,9 @@ if (typeof google.maps === 'undefined') {
                     return { lat: latlng.lat, lng: latlng.lng };
                 };
                 
+                // Store original Leaflet methods before overriding
+                var leafletSetOpacity = marker.setOpacity.bind(marker);
+                
                 marker.setZIndex = function(zIndex) {
                     if (marker._icon) {
                         marker._icon.style.zIndex = zIndex;
@@ -472,7 +475,7 @@ if (typeof google.maps === 'undefined') {
                 };
                 
                 marker.setOpacity = function(opacity) {
-                    marker.setOpacity(opacity);
+                    leafletSetOpacity(opacity);
                     return marker;
                 };
                 
