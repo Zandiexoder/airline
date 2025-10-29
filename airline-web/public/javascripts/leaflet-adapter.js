@@ -463,6 +463,33 @@ if (typeof google.maps === 'undefined') {
                     return { lat: latlng.lat, lng: latlng.lng };
                 };
                 
+                marker.setZIndex = function(zIndex) {
+                    if (marker._icon) {
+                        marker._icon.style.zIndex = zIndex;
+                    }
+                    marker._zIndex = zIndex;
+                    return marker;
+                };
+                
+                marker.setOpacity = function(opacity) {
+                    marker.setOpacity(opacity);
+                    return marker;
+                };
+                
+                marker.addListener = function(eventName, handler) {
+                    // Map Google Maps events to Leaflet events
+                    var leafletEvent = eventName;
+                    if (eventName === 'click') {
+                        leafletEvent = 'click';
+                    } else if (eventName === 'mouseover') {
+                        leafletEvent = 'mouseover';
+                    } else if (eventName === 'mouseout') {
+                        leafletEvent = 'mouseout';
+                    }
+                    marker.on(leafletEvent, handler);
+                    return marker;
+                };
+                
                 // Add to map if specified
                 if (options.map) {
                     marker.addTo(options.map);
