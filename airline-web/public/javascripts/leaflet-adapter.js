@@ -5,7 +5,7 @@
  * It wraps Leaflet functionality to mimic some Google Maps API patterns.
  */
 
-console.log('✅ Leaflet Adapter v3.4 loaded - addListener for polylines (route viewer support)');
+console.log('✅ Leaflet Adapter v3.5 loaded - clearListeners, strokeColor properties, getAt support');
 
 // Geometry helper functions (replaces google.maps.geometry.spherical)
 const LeafletGeometry = {
@@ -588,9 +588,16 @@ if (typeof google.maps === 'undefined') {
             };
             
             polyline.getPath = function() {
-                return polyline.getLatLngs().map(function(ll) {
+                var latlngs = polyline.getLatLngs().map(function(ll) {
                     return { lat: ll.lat, lng: ll.lng };
                 });
+                
+                // Add getAt method for Google Maps compatibility
+                latlngs.getAt = function(index) {
+                    return latlngs[index];
+                };
+                
+                return latlngs;
             };
             
             polyline.setOptions = function(options) {
@@ -636,6 +643,34 @@ if (typeof google.maps === 'undefined') {
                     polyline[key] = options[key];
                 }
             }
+            
+            // Add Google Maps compatible property accessors
+            Object.defineProperty(polyline, 'strokeColor', {
+                get: function() {
+                    return polyline.options.color;
+                },
+                set: function(value) {
+                    polyline.setStyle({ color: value });
+                }
+            });
+            
+            Object.defineProperty(polyline, 'strokeWeight', {
+                get: function() {
+                    return polyline.options.weight;
+                },
+                set: function(value) {
+                    polyline.setStyle({ weight: value });
+                }
+            });
+            
+            Object.defineProperty(polyline, 'strokeOpacity', {
+                get: function() {
+                    return polyline.options.opacity;
+                },
+                set: function(value) {
+                    polyline.setStyle({ opacity: value });
+                }
+            });
             
             // Add to map if specified
             if (options.map) {
@@ -728,6 +763,23 @@ if (typeof google.maps === 'undefined') {
             removeListener: function(listener) {
                 if (listener && listener.off) {
                     listener.off();
+                }
+            },
+            
+            clearListeners: function(instance, eventName) {
+                if (instance && instance.off) {
+                    if (eventName) {
+                        // Map Google Maps event names to Leaflet events
+                        var leafletEvent = eventName;
+                        if (eventName === 'mouseover') leafletEvent = 'mouseover';
+                        else if (eventName === 'mouseout') leafletEvent = 'mouseout';
+                        else if (eventName === 'click') leafletEvent = 'click';
+                        
+                        instance.off(leafletEvent);
+                    } else {
+                        // Clear all listeners
+                        instance.off();
+                    }
                 }
             }
         },
