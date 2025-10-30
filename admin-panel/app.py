@@ -644,5 +644,263 @@ def get_alerts():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/bots')
+def get_bots():
+    """Get all bot airlines with their status"""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Get all bot airlines
+        cursor.execute("""
+            SELECT 
+                a.id,
+                a.name,
+                a.balance,
+                a.reputation,
+                a.service_quality,
+                a.creation_time,
+                (SELECT COUNT(*) FROM link WHERE airline = a.id) as route_count,
+                (SELECT COUNT(*) FROM airplane WHERE owner = a.id) as aircraft_count,
+                (SELECT COUNT(*) FROM airline_base WHERE airline = a.id) as base_count
+            FROM airline a
+            WHERE a.is_generated = 1
+            ORDER BY a.name
+        """)
+        bots = cursor.fetchall()
+        
+        # Enhance each bot with personality and additional stats
+        for bot in bots:
+            # Determine personality based on cash, reputation, service quality
+            bot['personality'] = determine_personality(
+                bot['balance'], 
+                bot['reputation'], 
+                bot['service_quality']
+            )
+            
+            # Get route details
+            cursor.execute("""
+                SELECT 
+                    l.id,
+                    from_airport.iata as from_iata,
+                    from_airport.city as from_city,
+                    to_airport.iata as to_iata,
+                    to_airport.city as to_city,
+                    l.distance,
+                    l.frequency,
+                    l.price_economy,
+                    l.price_business,
+                    l.price_first,
+                    l.quality,
+                    l.capacity_economy,
+                    l.capacity_business,
+                    l.capacity_first
+                FROM link l
+                JOIN airport from_airport ON l.from_airport = from_airport.id
+                JOIN airport to_airport ON l.to_airport = to_airport.id
+                WHERE l.airline = %s
+                ORDER BY l.id DESC
+                LIMIT 10
+            """, (bot['id'],))
+            bot['routes'] = cursor.fetchall()
+            
+            # Get aircraft fleet
+            cursor.execute("""
+                SELECT 
+                    model as name,
+                    COUNT(*) as count,
+                    AVG(airplane_condition) as avg_condition,
+                    SUM(CASE WHEN is_sold = 0 THEN 1 ELSE 0 END) as available
+                FROM airplane
+                WHERE owner = %s
+                GROUP BY model
+                ORDER BY count DESC
+            """, (bot['id'],))
+            bot['fleet'] = cursor.fetchall()
+            
+            # Get bases
+            cursor.execute("""
+                SELECT 
+                    ap.iata,
+                    ap.city,
+                    ap.name as airport_name,
+                    ab.scale,
+                    ab.founded_cycle
+                FROM airline_base ab
+                JOIN airport ap ON ab.airport = ap.id
+                WHERE ab.airline = %s
+            """, (bot['id'],))
+            bot['bases'] = cursor.fetchall()
+            
+        return jsonify({'bots': bots})
+    finally:
+        cursor.close()
+        conn.close()
+
+def determine_personality(balance, reputation, service_quality):
+    """Determine bot personality based on stats (mirrors BotAISimulation.scala logic)"""
+    cash_ratio = balance / 10000000.0  # Normalize to 10M
+    
+    if service_quality and service_quality > 70:
+        return "PREMIUM"
+    elif cash_ratio < 2 and reputation and reputation < 30:
+        return "BUDGET"
+    elif reputation and reputation > 70:
+        return "CONSERVATIVE"
+    elif cash_ratio > 10:
+        return "AGGRESSIVE"
+    elif service_quality and service_quality < 40:
+        return "REGIONAL"
+    else:
+        return "BALANCED"
+
+@app.route('/api/bots/<int:bot_id>/routes')
+def get_bot_routes(bot_id):
+    """Get detailed routes for a specific bot"""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        cursor.execute("""
+            SELECT 
+                l.id,
+                from_airport.iata as from_iata,
+                from_airport.name as from_name,
+                from_airport.city as from_city,
+                from_airport.country_code as from_country,
+                to_airport.iata as to_iata,
+                to_airport.name as to_name,
+                to_airport.city as to_city,
+                to_airport.country_code as to_country,
+                l.distance,
+                l.frequency,
+                l.duration,
+                l.price_economy,
+                l.price_business,
+                l.price_first,
+                l.quality,
+                l.capacity_economy,
+                l.capacity_business,
+                l.capacity_first,
+                l.sold_seats_economy,
+                l.sold_seats_business,
+                l.sold_seats_first,
+                l.flight_type
+            FROM link l
+            JOIN airport from_airport ON l.from_airport = from_airport.id
+            JOIN airport to_airport ON l.to_airport = to_airport.id
+            WHERE l.airline = %s
+            ORDER BY l.id DESC
+        """, (bot_id,))
+        routes = cursor.fetchall()
+        
+        # Calculate load factors
+        for route in routes:
+            total_capacity = (route['capacity_economy'] or 0) + (route['capacity_business'] or 0) + (route['capacity_first'] or 0)
+            total_sold = (route['sold_seats_economy'] or 0) + (route['sold_seats_business'] or 0) + (route['sold_seats_first'] or 0)
+            route['load_factor'] = (total_sold / total_capacity * 100) if total_capacity > 0 else 0
+        
+        return jsonify({'routes': routes})
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/bots/<int:bot_id>/aircraft')
+def get_bot_aircraft(bot_id):
+    """Get detailed aircraft for a specific bot"""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        cursor.execute("""
+            SELECT 
+                id,
+                model as name,
+                airplane_condition as condition,
+                depreciation_rate,
+                value,
+                purchase_date,
+                is_sold,
+                dealer_ratio,
+                configuration
+            FROM airplane
+            WHERE owner = %s
+            ORDER BY model, id
+        """, (bot_id,))
+        aircraft = cursor.fetchall()
+        
+        return jsonify({'aircraft': aircraft})
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/bots/summary')
+def get_bots_summary():
+    """Get summary statistics for all bots"""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Total bots
+        cursor.execute("SELECT COUNT(*) as total FROM airline WHERE is_generated = 1")
+        total_bots = cursor.fetchone()['total']
+        
+        # Total routes
+        cursor.execute("""
+            SELECT COUNT(*) as total 
+            FROM link l
+            JOIN airline a ON l.airline = a.id
+            WHERE a.is_generated = 1
+        """)
+        total_routes = cursor.fetchone()['total']
+        
+        # Total aircraft
+        cursor.execute("""
+            SELECT COUNT(*) as total 
+            FROM airplane ap
+            JOIN airline a ON ap.owner = a.id
+            WHERE a.is_generated = 1 AND ap.is_sold = 0
+        """)
+        total_aircraft = cursor.fetchone()['total']
+        
+        # Personality distribution
+        cursor.execute("""
+            SELECT 
+                a.id,
+                a.balance,
+                a.reputation,
+                a.service_quality
+            FROM airline a
+            WHERE a.is_generated = 1
+        """)
+        bots_data = cursor.fetchall()
+        
+        personality_counts = {
+            'AGGRESSIVE': 0,
+            'CONSERVATIVE': 0,
+            'BALANCED': 0,
+            'REGIONAL': 0,
+            'PREMIUM': 0,
+            'BUDGET': 0
+        }
+        
+        for bot in bots_data:
+            personality = determine_personality(
+                bot['balance'],
+                bot['reputation'],
+                bot['service_quality']
+            )
+            personality_counts[personality] += 1
+        
+        return jsonify({
+            'total_bots': total_bots,
+            'total_routes': total_routes,
+            'total_aircraft': total_aircraft,
+            'personality_distribution': personality_counts
+        })
+    finally:
+        cursor.close()
+        conn.close()
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=9001, debug=True)

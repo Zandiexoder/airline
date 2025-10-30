@@ -121,7 +121,7 @@ object BotAISimulation {
     // Get available cash for route expansion
     val availableCash = airline.getBalance() * 0.1 // Use 10% of cash for expansion
     if (availableCash < 5000000) {
-      println(s"[${airline.name}] Insufficient funds for expansion (need $5M)")
+      println(s"[${airline.name}] Insufficient funds for expansion (need $$5M)")
       return
     }
     

@@ -405,6 +405,155 @@
             font-weight: 600;
             color: #2c3e50;
         }
+        
+        .bot-card {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        
+        .bot-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+        
+        .bot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .bot-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .personality-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .personality-AGGRESSIVE { background: #ff6b6b; color: white; }
+        .personality-CONSERVATIVE { background: #4ecdc4; color: white; }
+        .personality-BALANCED { background: #95e1d3; color: #2c3e50; }
+        .personality-REGIONAL { background: #f38181; color: white; }
+        .personality-PREMIUM { background: #aa96da; color: white; }
+        .personality-BUDGET { background: #fcbad3; color: #2c3e50; }
+        
+        .bot-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .bot-stat {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .bot-stat-label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .bot-stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .bot-routes-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        
+        .route-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        
+        .route-path {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .route-info {
+            color: #7f8c8d;
+        }
+        
+        .bot-fleet {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .fleet-item {
+            background: #e3f2fd;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .fleet-model {
+            font-weight: bold;
+            color: #1976d2;
+        }
+        
+        .fleet-count {
+            color: #7f8c8d;
+        }
+        
+        .collapse-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+        
+        .collapse-btn:hover {
+            background: #5568d3;
+        }
+        
+        .bot-details {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #ecf0f1;
+        }
+        
+        .details-hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -503,6 +652,17 @@
             <h2 class="section-title">🚨 System Alerts</h2>
             <div id="alerts-container">
                 <div class="loading">Loading alerts...</div>
+            </div>
+        </div>
+        
+        <!-- Bot AI Status -->
+        <div class="section">
+            <h2 class="section-title">🤖 Bot AI Airlines</h2>
+            <div id="bots-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <div class="loading">Loading bot summary...</div>
+            </div>
+            <div id="bots-container">
+                <div class="loading">Loading bots...</div>
             </div>
         </div>
         
@@ -1056,6 +1216,167 @@
             }
         }
         
+        // Load bot AI summary
+        async function loadBotsSummary() {
+            try {
+                const response = await fetch('/api/bots/summary');
+                const data = await response.json();
+                const container = document.getElementById('bots-summary');
+                
+                const html = `
+                    <div class="bot-stat">
+                        <div class="bot-stat-label">Total Bots</div>
+                        <div class="bot-stat-value">${data.total_bots}</div>
+                    </div>
+                    <div class="bot-stat">
+                        <div class="bot-stat-label">Routes</div>
+                        <div class="bot-stat-value">${data.total_routes}</div>
+                    </div>
+                    <div class="bot-stat">
+                        <div class="bot-stat-label">Aircraft</div>
+                        <div class="bot-stat-value">${data.total_aircraft}</div>
+                    </div>
+                    <div class="bot-stat">
+                        <div class="bot-stat-label">🔴 Aggressive</div>
+                        <div class="bot-stat-value">${data.personality_distribution.AGGRESSIVE}</div>
+                    </div>
+                    <div class="bot-stat">
+                        <div class="bot-stat-label">🔵 Conservative</div>
+                        <div class="bot-stat-value">${data.personality_distribution.CONSERVATIVE}</div>
+                    </div>
+                    <div class="bot-stat">
+                        <div class="bot-stat-label">⚖️ Balanced</div>
+                        <div class="bot-stat-value">${data.personality_distribution.BALANCED}</div>
+                    </div>
+                    <div class="bot-stat">
+                        <div class="bot-stat-label">📍 Regional</div>
+                        <div class="bot-stat-value">${data.personality_distribution.REGIONAL}</div>
+                    </div>
+                    <div class="bot-stat">
+                        <div class="bot-stat-label">👑 Premium</div>
+                        <div class="bot-stat-value">${data.personality_distribution.PREMIUM}</div>
+                    </div>
+                    <div class="bot-stat">
+                        <div class="bot-stat-label">💰 Budget</div>
+                        <div class="bot-stat-value">${data.personality_distribution.BUDGET}</div>
+                    </div>
+                `;
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading bots summary:', error);
+                document.getElementById('bots-summary').innerHTML = 
+                    '<div class="loading">Error loading bot summary</div>';
+            }
+        }
+        
+        // Load bot AI details
+        async function loadBots() {
+            try {
+                const response = await fetch('/api/bots');
+                const data = await response.json();
+                const container = document.getElementById('bots-container');
+                
+                if (data.bots.length === 0) {
+                    container.innerHTML = '<div class="loading">No bot airlines found</div>';
+                    return;
+                }
+                
+                let html = '';
+                data.bots.forEach(bot => {
+                    html += `
+                        <div class="bot-card">
+                            <div class="bot-header">
+                                <div class="bot-name">${bot.name}</div>
+                                <span class="personality-badge personality-${bot.personality}">${bot.personality}</span>
+                            </div>
+                            
+                            <div class="bot-stats">
+                                <div class="bot-stat">
+                                    <div class="bot-stat-label">Balance</div>
+                                    <div class="bot-stat-value">$${(bot.balance / 1000000).toFixed(1)}M</div>
+                                </div>
+                                <div class="bot-stat">
+                                    <div class="bot-stat-label">Reputation</div>
+                                    <div class="bot-stat-value">${bot.reputation || 0}</div>
+                                </div>
+                                <div class="bot-stat">
+                                    <div class="bot-stat-label">Service</div>
+                                    <div class="bot-stat-value">${(bot.service_quality || 0).toFixed(1)}</div>
+                                </div>
+                                <div class="bot-stat">
+                                    <div class="bot-stat-label">Routes</div>
+                                    <div class="bot-stat-value">${bot.route_count}</div>
+                                </div>
+                                <div class="bot-stat">
+                                    <div class="bot-stat-label">Aircraft</div>
+                                    <div class="bot-stat-value">${bot.aircraft_count}</div>
+                                </div>
+                                <div class="bot-stat">
+                                    <div class="bot-stat-label">Bases</div>
+                                    <div class="bot-stat-value">${bot.base_count}</div>
+                                </div>
+                            </div>
+                            
+                            <button class="collapse-btn" onclick="toggleBotDetails(${bot.id})">
+                                <span id="toggle-icon-${bot.id}">▼</span> Show Details
+                            </button>
+                            
+                            <div id="bot-details-${bot.id}" class="bot-details details-hidden">
+                                <h4 style="margin-bottom: 10px;">🏢 Bases</h4>
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                                    ${(bot.bases || []).map(base => `
+                                        <div class="container-badge">${base.iata} - ${base.city}</div>
+                                    `).join('')}
+                                </div>
+                                
+                                <h4 style="margin-bottom: 10px;">✈️ Recent Routes</h4>
+                                <div class="bot-routes-list">
+                                    ${(bot.routes || []).length === 0 ? '<div style="text-align: center; color: #7f8c8d;">No routes yet</div>' : ''}
+                                    ${(bot.routes || []).map(route => `
+                                        <div class="route-item">
+                                            <span class="route-path">${route.from_iata} → ${route.to_iata}</span>
+                                            <span class="route-info">${route.distance}km | ${route.frequency}x/wk | Q:${(route.quality || 0).toFixed(0)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                
+                                <h4 style="margin: 15px 0 10px 0;">🛩️ Fleet</h4>
+                                <div class="bot-fleet">
+                                    ${(bot.fleet || []).length === 0 ? '<div style="text-align: center; color: #7f8c8d; grid-column: 1/-1;">No aircraft</div>' : ''}
+                                    ${(bot.fleet || []).map(aircraft => `
+                                        <div class="fleet-item">
+                                            <div class="fleet-model">${aircraft.name}</div>
+                                            <div class="fleet-count">${aircraft.count}x | ${(aircraft.avg_condition || 0).toFixed(1)}%</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading bots:', error);
+                document.getElementById('bots-container').innerHTML = 
+                    '<div class="loading">Error loading bots</div>';
+            }
+        }
+        
+        // Toggle bot details
+        function toggleBotDetails(botId) {
+            const details = document.getElementById(`bot-details-${botId}`);
+            const icon = document.getElementById(`toggle-icon-${botId}`);
+            
+            if (details.classList.contains('details-hidden')) {
+                details.classList.remove('details-hidden');
+                icon.textContent = '▲';
+            } else {
+                details.classList.add('details-hidden');
+                icon.textContent = '▼';
+            }
+        }
+        
         // Initial load
         loadStats();
         loadUsers();
@@ -1065,6 +1386,8 @@
         loadGameActivity();
         loadContainers();
         loadLogs();
+        loadBotsSummary();
+        loadBots();
         
         // Refresh stats every 60 seconds
         setInterval(loadStats, 60000);
@@ -1079,6 +1402,8 @@
         setInterval(() => {
             loadDatabaseStats();
             loadGameActivity();
+            loadBotsSummary();
+            loadBots();
         }, 60000);
         
         // Refresh containers every 10 seconds
