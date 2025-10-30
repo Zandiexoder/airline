@@ -311,7 +311,9 @@ function initMap() {
 		// maxBounds: [[85, -180], [-85, 180]],
 		// maxBoundsViscosity: 1.0,
 		zoomControl: true,
-		worldCopyJump: true  // Allows seamless world wrapping
+		worldCopyJump: true,  // Allows seamless world wrapping
+		continuousWorld: false,  // IMPORTANT: Must be false for wrapping to work correctly
+		noWrap: false  // Allow wrapping of tile layer
 	});
 	
 	// Add tile layer based on current map type
@@ -380,7 +382,8 @@ function updateLeafletTileLayer(mapType) {
 	map.tileLayer = L.tileLayer(tileUrl, {
 		attribution: attribution,
 		maxZoom: 19,
-		subdomains: ['a', 'b', 'c']
+		subdomains: ['a', 'b', 'c'],
+		noWrap: false  // Enable tile wrapping for continuous world
 	});
 	
 	map.tileLayer.addTo(map);

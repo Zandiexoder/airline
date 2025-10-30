@@ -5,7 +5,7 @@
  * It wraps Leaflet functionality to mimic some Google Maps API patterns.
  */
 
-console.log('✅ Leaflet Adapter v3.5 loaded - clearListeners, strokeColor properties, getAt support');
+console.log('Leaflet Adapter v3.6 loaded - Infinite world wrapping with marker duplicates');
 
 // Geometry helper functions (replaces google.maps.geometry.spherical)
 const LeafletGeometry = {
@@ -544,6 +544,74 @@ if (typeof google.maps === 'undefined') {
                 console.log('✅ Marker created with custom properties:', 
                     'airport:', marker.airport ? marker.airport.name : 'none',
                     'isBase:', marker.isBase);
+                
+                // Create world-wrapped duplicates for infinite scrolling
+                marker._wrapDuplicates = [];
+                
+                // Store original addTo and remove methods
+                var originalAddTo = marker.addTo.bind(marker);
+                var originalRemove = marker.remove.bind(marker);
+                
+                // Override addTo to also add duplicates
+                marker.addTo = function(map) {
+                    originalAddTo(map);
+                    
+                    // Create duplicates at ±360° longitude
+                    [-360, 360].forEach(function(offset) {
+                        var dupLatlng = L.latLng(latlng.lat, latlng.lng + offset);
+                        var duplicate = L.marker(dupLatlng, markerOptions);
+                        
+                        // Copy all properties to duplicate
+                        for (var prop in marker) {
+                            if (marker.hasOwnProperty(prop) && 
+                                typeof marker[prop] !== 'function' && 
+                                prop !== '_wrapDuplicates' &&
+                                prop !== '_leaflet_id') {
+                                duplicate[prop] = marker[prop];
+                            }
+                        }
+                        
+                        // Link duplicate events to main marker
+                        duplicate.on('click', function(e) {
+                            marker.fire('click', e);
+                        });
+                        duplicate.on('mouseover', function(e) {
+                            marker.fire('mouseover', e);
+                        });
+                        duplicate.on('mouseout', function(e) {
+                            marker.fire('mouseout', e);
+                        });
+                        
+                        duplicate.addTo(map);
+                        marker._wrapDuplicates.push(duplicate);
+                    });
+                    
+                    return marker;
+                };
+                
+                // Override remove to also remove duplicates
+                marker.remove = function() {
+                    marker._wrapDuplicates.forEach(function(dup) {
+                        dup.remove();
+                    });
+                    marker._wrapDuplicates = [];
+                    originalRemove();
+                    return marker;
+                };
+                
+                // Override setVisible to affect duplicates
+                var originalSetVisible = marker.setVisible;
+                marker.setVisible = function(visible) {
+                    originalSetVisible.call(marker, visible);
+                    marker._wrapDuplicates.forEach(function(dup) {
+                        if (visible && !dup._map) {
+                            dup.addTo(options.map);
+                        } else if (!visible && dup._map) {
+                            dup.remove();
+                        }
+                    });
+                    return marker;
+                };
                 
                 // Add to map if specified
                 if (options.map) {
