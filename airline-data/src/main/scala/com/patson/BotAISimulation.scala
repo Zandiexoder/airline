@@ -150,7 +150,7 @@ object BotAISimulation {
           personality, 
           availableCash.toLong,
           availableAirplanes
-        )      potentialDestinations.foreach { destination =>
+        )potentialDestinations.foreach { destination =>
         if (routesCreated < MAX_ROUTES_PER_CYCLE) {
           // Find suitable aircraft for this route
           val distance = Computation.calculateDistance(base.airport, destination).intValue()
@@ -209,24 +209,27 @@ object BotAISimulation {
       val duration = Computation.calculateDuration(airplane.model, distance)
       
       // Calculate pricing based on personality
-      val pricing = personality.calculatePricing(from, to, distance)
+      val pricingMap = personality.calculatePricing(from, to, distance)
       
       // Create link class configuration based on personality
-      val linkClassValues = personality.configureLinkClasses(airplane)
+      val linkClassConfig = personality.configureLinkClasses(airplane)
       
       // Create the link
       val link = Link(
         from,
         to,
         airline,
-        LinkClassValues.getInstance(pricing), // Use personality pricing
+        LinkClassValues.getInstance(
+          pricingMap(ECONOMY).toInt, 
+          pricingMap(BUSINESS).toInt, 
+          pricingMap(FIRST).toInt
+        ), // Pricing
         distance,
-        LinkClassValues.getInstance(linkClassValues), // Capacity configuration
+        LinkClassValues.getInstanceByMap(linkClassConfig), // Capacity configuration
         personality.serviceQuality.toInt, // rawQuality
         duration,
         frequency,
-        0, // flightNumber
-        0 // no id yet
+        0 // flightNumber
       )
       
       // Assign airplane to link
@@ -235,7 +238,7 @@ object BotAISimulation {
       // Save the link
       LinkSource.saveLink(link) match {
         case Some(savedLink) =>
-          println(s"    💰 Pricing: Economy ${pricing(ECONOMY)}, Business ${pricing(BUSINESS)}, First ${pricing(FIRST)}")
+          println(s"    💰 Pricing: Economy ${pricingMap(ECONOMY).toInt}, Business ${pricingMap(BUSINESS).toInt}, First ${pricingMap(FIRST).toInt}")
           true
         case None =>
           println(s"    ❌ Failed to save link")
