@@ -341,6 +341,16 @@ function initMap() {
 		});
 	});
 	
+	// Add moveend listener to update marker wrapping positions
+	map.on('moveend', function() {
+		// Update all visible markers to show at the best wrapped position
+		$.each(markers, function(key, marker) {
+			if (marker._updateWrappedPosition && marker._map) {
+				marker._updateWrappedPosition();
+			}
+		});
+	});
+	
 	// Add map type change handler (for switching between light/dark/satellite)
 	map.on('baselayerchange', function(e) {
 		var mapType = e.name || 'roadmap';

@@ -5,7 +5,7 @@
  * It wraps Leaflet functionality to mimic some Google Maps API patterns.
  */
 
-console.log('Leaflet Adapter v3.6 loaded - Infinite world wrapping with marker duplicates');
+console.log('Leaflet Adapter v3.7 loaded - Smart viewport-based world wrapping (performance optimized)');
 
 // Geometry helper functions (replaces google.maps.geometry.spherical)
 const LeafletGeometry = {
@@ -541,75 +541,53 @@ if (typeof google.maps === 'undefined') {
                     }
                 }
                 
-                console.log('✅ Marker created with custom properties:', 
+                                console.log('✅ Marker created with custom properties:', 
                     'airport:', marker.airport ? marker.airport.name : 'none',
                     'isBase:', marker.isBase);
                 
-                // Create world-wrapped duplicates for infinite scrolling
-                marker._wrapDuplicates = [];
+                // Store original position for world wrapping
+                marker._originalLng = latlng.lng;
+                marker._wrapOffset = 0;
                 
-                // Store original addTo and remove methods
+                // Store original setLatLng for wrapping support
+                var originalSetLatLng = marker.setLatLng.bind(marker);
+                
+                // Function to update marker position based on map view
+                marker._updateWrappedPosition = function() {
+                    if (!marker._map) return;
+                    
+                    var mapCenter = marker._map.getCenter();
+                    var centerLng = mapCenter.lng;
+                    var markerLng = marker._originalLng;
+                    
+                    // Find the best wrapped version of this longitude relative to map center
+                    // Check -360, 0, +360 offsets and pick the closest one to center
+                    var possibleLngs = [
+                        markerLng - 360,
+                        markerLng,
+                        markerLng + 360
+                    ];
+                    
+                    var bestLng = possibleLngs.reduce(function(best, lng) {
+                        var distToBest = Math.abs(centerLng - best);
+                        var distToThis = Math.abs(centerLng - lng);
+                        return distToThis < distToBest ? lng : best;
+                    });
+                    
+                    // Only update if position changed
+                    if (bestLng !== latlng.lng) {
+                        latlng.lng = bestLng;
+                        originalSetLatLng(latlng);
+                    }
+                };
+                
+                // Store original addTo
                 var originalAddTo = marker.addTo.bind(marker);
-                var originalRemove = marker.remove.bind(marker);
                 
-                // Override addTo to also add duplicates
+                // Override addTo to set up viewport tracking
                 marker.addTo = function(map) {
                     originalAddTo(map);
-                    
-                    // Create duplicates at ±360° longitude
-                    [-360, 360].forEach(function(offset) {
-                        var dupLatlng = L.latLng(latlng.lat, latlng.lng + offset);
-                        var duplicate = L.marker(dupLatlng, markerOptions);
-                        
-                        // Copy all properties to duplicate
-                        for (var prop in marker) {
-                            if (marker.hasOwnProperty(prop) && 
-                                typeof marker[prop] !== 'function' && 
-                                prop !== '_wrapDuplicates' &&
-                                prop !== '_leaflet_id') {
-                                duplicate[prop] = marker[prop];
-                            }
-                        }
-                        
-                        // Link duplicate events to main marker
-                        duplicate.on('click', function(e) {
-                            marker.fire('click', e);
-                        });
-                        duplicate.on('mouseover', function(e) {
-                            marker.fire('mouseover', e);
-                        });
-                        duplicate.on('mouseout', function(e) {
-                            marker.fire('mouseout', e);
-                        });
-                        
-                        duplicate.addTo(map);
-                        marker._wrapDuplicates.push(duplicate);
-                    });
-                    
-                    return marker;
-                };
-                
-                // Override remove to also remove duplicates
-                marker.remove = function() {
-                    marker._wrapDuplicates.forEach(function(dup) {
-                        dup.remove();
-                    });
-                    marker._wrapDuplicates = [];
-                    originalRemove();
-                    return marker;
-                };
-                
-                // Override setVisible to affect duplicates
-                var originalSetVisible = marker.setVisible;
-                marker.setVisible = function(visible) {
-                    originalSetVisible.call(marker, visible);
-                    marker._wrapDuplicates.forEach(function(dup) {
-                        if (visible && !dup._map) {
-                            dup.addTo(options.map);
-                        } else if (!visible && dup._map) {
-                            dup.remove();
-                        }
-                    });
+                    marker._updateWrappedPosition();
                     return marker;
                 };
                 
