@@ -150,7 +150,9 @@ object BotAISimulation {
           personality, 
           availableCash.toLong,
           availableAirplanes
-        )potentialDestinations.foreach { destination =>
+        )
+      
+      potentialDestinations.foreach { destination =>
         if (routesCreated < MAX_ROUTES_PER_CYCLE) {
           // Find suitable aircraft for this route
           val distance = Computation.calculateDistance(base.airport, destination).intValue()
