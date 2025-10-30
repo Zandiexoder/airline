@@ -115,7 +115,7 @@ object BotAISimulation {
       return
     }
     
-    val existingLinks = LinkSource.loadLinksByAirlineId(airline.id)
+    val existingLinks = LinkSource.loadFlightLinksByAirlineId(airline.id)
     val existingDestinations = existingLinks.flatMap(link => List(link.from.id, link.to.id)).toSet
     
     // Get available cash for route expansion
@@ -127,7 +127,7 @@ object BotAISimulation {
     
     // Get available airplanes
     val allAirplanes = AirplaneSource.loadAirplanesByOwner(airline.id)
-    val assignedAirplanes = LinkSource.loadLinksByAirlineId(airline.id)
+    val assignedAirplanes = LinkSource.loadFlightLinksByAirlineId(airline.id)
       .flatMap(_.getAssignedAirplanes().keys)
       .toSet
     val availableAirplanes = allAirplanes.filter(a => 
@@ -144,15 +144,13 @@ object BotAISimulation {
     bases.foreach { base =>
       if (routesCreated >= MAX_ROUTES_PER_CYCLE) return
       
-      val potentialDestinations = findPotentialDestinations(
-        base.airport, 
-        existingDestinations, 
-        personality, 
-        availableCash,
-        availableAirplanes
-      )
-      
-      potentialDestinations.foreach { destination =>
+        val potentialDestinations = findPotentialDestinations(
+          base.airport, 
+          existingDestinations, 
+          personality, 
+          availableCash.toLong,
+          availableAirplanes
+        )      potentialDestinations.foreach { destination =>
         if (routesCreated < MAX_ROUTES_PER_CYCLE) {
           // Find suitable aircraft for this route
           val distance = Computation.calculateDistance(base.airport, destination).intValue()
@@ -224,19 +222,15 @@ object BotAISimulation {
         LinkClassValues.getInstance(pricing), // Use personality pricing
         distance,
         LinkClassValues.getInstance(linkClassValues), // Capacity configuration
-        0, // sold seats
-        frequency,
+        personality.serviceQuality.toInt, // rawQuality
         duration,
         frequency,
-        FlightType.getFlightType(from, to, distance),
+        0, // flightNumber
         0 // no id yet
       )
       
       // Assign airplane to link
       link.setAssignedAirplanes(Map(airplane -> LinkAssignment(frequency, frequency)))
-      
-      // Set service level based on personality
-      link.setQuality(personality.serviceQuality)
       
       // Save the link
       LinkSource.saveLink(link) match {
@@ -330,33 +324,21 @@ object BotAISimulation {
     // 5. Purchase and assign home base
   }
   
-  /**
-   * Optimize existing routes - adjust frequency, pricing, etc.
+    /**
+   * Optimize existing routes - adjust frequency and pricing based on performance
    */
   private def optimizeExistingRoutes(airline: Airline, personality: BotPersonality, cycle: Int): Unit = {
-    println(s"[${airline.name}] Optimizing routes (${personality})")
+    // TODO: Implement route optimization
+    // For now, just log
+    println(s"[${airline.name}] Route optimization not yet implemented")
     
-    val links = LinkSource.loadLinksByAirlineId(airline.id)
+    /* Future implementation:
+    val links = LinkSource.loadFlightLinksByAirlineId(airline.id)
     if (links.isEmpty) return
     
-    val linkConsumptions = LinkStatisticsSource.loadLinkStatistics(cycle - 1)
-      .filter(stat => stat.link.airline.id == airline.id)
-    
-    linkConsumptions.foreach { stat =>
-      val capacityUtilization = stat.capacity.total match {
-        case 0 => 0.0
-        case total => stat.soldSeats.total.toDouble / total.toDouble
-      }
-      
-      // Adjust frequency based on utilization
-      if (capacityUtilization > personality.targetCapacityHigh) {
-        println(s"[${airline.name}] Route ${stat.link.from.iata}->${stat.link.to.iata} over capacity (${(capacityUtilization*100).toInt}%), considering frequency increase")
-        // TODO: Increase frequency if aircraft available
-      } else if (capacityUtilization < personality.targetCapacityLow) {
-        println(s"[${airline.name}] Route ${stat.link.from.iata}->${stat.link.to.iata} under capacity (${(capacityUtilization*100).toInt}%), considering frequency decrease")
-        // TODO: Decrease frequency to improve profitability
-      }
-    }
+    // Load link statistics for previous cycle
+    val linkStatistics = LinkStatisticsSource.loadLinkStatisticsByAirline(airline.id)
+    */
   }
   
   /**
@@ -365,7 +347,7 @@ object BotAISimulation {
   private def respondToCompetition(airline: Airline, personality: BotPersonality, cycle: Int): Unit = {
     println(s"[${airline.name}] Analyzing competition (${personality})")
     
-    val ownLinks = LinkSource.loadLinksByAirlineId(airline.id)
+    val ownLinks = LinkSource.loadFlightLinksByAirlineId(airline.id)
     
     ownLinks.foreach { link =>
       // Find competing airlines on same route
@@ -415,7 +397,7 @@ sealed trait BotPersonality {
   def scoreDestination(airport: Airport, distance: Int, fromAirport: Airport): Double
   def preferredAircraftCategory(currentFleet: List[Airplane], avgAge: Int): String
   def calculatePricing(fromAirport: Airport, toAirport: Airport, distance: Int): Map[LinkClass, Double]
-  def configureLinkClasses(airplane: Airplane): Map[LinkClass, LinkClassCapacity]
+  def configureLinkClasses(airplane: Airplane): Map[LinkClass, Int]
   def calculateOptimalFrequency(distance: Int, airplane: Airplane): Int
 }
 
@@ -452,13 +434,13 @@ object BotPersonality {
       )
     }
     
-    def configureLinkClasses(airplane: Airplane): Map[LinkClass, LinkClassCapacity] = {
+    def configureLinkClasses(airplane: Airplane): Map[LinkClass, Int] = {
       // Growth-focused: 80% economy, 15% business, 5% first
       val totalSeats = airplane.model.capacity
       Map(
-        ECONOMY -> LinkClassCapacity(ECONOMY, (totalSeats * 0.80).toInt),
-        BUSINESS -> LinkClassCapacity(BUSINESS, (totalSeats * 0.15).toInt),
-        FIRST -> LinkClassCapacity(FIRST, (totalSeats * 0.05).toInt)
+        ECONOMY -> (totalSeats * 0.80).toInt,
+        BUSINESS -> (totalSeats * 0.15).toInt,
+        FIRST -> (totalSeats * 0.05).toInt
       )
     }
     
@@ -500,13 +482,13 @@ object BotPersonality {
       )
     }
     
-    def configureLinkClasses(airplane: Airplane): Map[LinkClass, LinkClassCapacity] = {
+    def configureLinkClasses(airplane: Airplane): Map[LinkClass, Int] = {
       // Traditional: 70% economy, 20% business, 10% first
       val totalSeats = airplane.model.capacity
       Map(
-        ECONOMY -> LinkClassCapacity(ECONOMY, (totalSeats * 0.70).toInt),
-        BUSINESS -> LinkClassCapacity(BUSINESS, (totalSeats * 0.20).toInt),
-        FIRST -> LinkClassCapacity(FIRST, (totalSeats * 0.10).toInt)
+        ECONOMY -> (totalSeats * 0.70).toInt,
+        BUSINESS -> (totalSeats * 0.20).toInt,
+        FIRST -> (totalSeats * 0.10).toInt
       )
     }
     
@@ -547,13 +529,13 @@ object BotPersonality {
       )
     }
     
-    def configureLinkClasses(airplane: Airplane): Map[LinkClass, LinkClassCapacity] = {
+    def configureLinkClasses(airplane: Airplane): Map[LinkClass, Int] = {
       // Standard: 75% economy, 20% business, 5% first
       val totalSeats = airplane.model.capacity
       Map(
-        ECONOMY -> LinkClassCapacity(ECONOMY, (totalSeats * 0.75).toInt),
-        BUSINESS -> LinkClassCapacity(BUSINESS, (totalSeats * 0.20).toInt),
-        FIRST -> LinkClassCapacity(FIRST, (totalSeats * 0.05).toInt)
+        ECONOMY -> (totalSeats * 0.75).toInt,
+        BUSINESS -> (totalSeats * 0.20).toInt,
+        FIRST -> (totalSeats * 0.05).toInt
       )
     }
     
@@ -596,13 +578,13 @@ object BotPersonality {
       )
     }
     
-    def configureLinkClasses(airplane: Airplane): Map[LinkClass, LinkClassCapacity] = {
+    def configureLinkClasses(airplane: Airplane): Map[LinkClass, Int] = {
       // Efficient: 85% economy, 15% business, no first class
       val totalSeats = airplane.model.capacity
       Map(
-        ECONOMY -> LinkClassCapacity(ECONOMY, (totalSeats * 0.85).toInt),
-        BUSINESS -> LinkClassCapacity(BUSINESS, (totalSeats * 0.15).toInt),
-        FIRST -> LinkClassCapacity(FIRST, 0)
+        ECONOMY -> (totalSeats * 0.85).toInt,
+        BUSINESS -> (totalSeats * 0.15).toInt,
+        FIRST -> 0
       )
     }
     
@@ -635,8 +617,7 @@ object BotPersonality {
     }
     
     def preferredAircraftCategory(currentFleet: List[Airplane], avgAge: Int): String = {
-      if (distance > 8000) "JUMBO" else "LARGE"
-      // Note: distance is not available here, simplified for now
+      // Always prefer large aircraft for premium service
       "LARGE"
     }
     
@@ -651,13 +632,13 @@ object BotPersonality {
       )
     }
     
-    def configureLinkClasses(airplane: Airplane): Map[LinkClass, LinkClassCapacity] = {
+    def configureLinkClasses(airplane: Airplane): Map[LinkClass, Int] = {
       // Luxury mix: 50% economy, 30% business, 20% first
       val totalSeats = airplane.model.capacity
       Map(
-        ECONOMY -> LinkClassCapacity(ECONOMY, (totalSeats * 0.50).toInt),
-        BUSINESS -> LinkClassCapacity(BUSINESS, (totalSeats * 0.30).toInt),
-        FIRST -> LinkClassCapacity(FIRST, (totalSeats * 0.20).toInt)
+        ECONOMY -> (totalSeats * 0.50).toInt,
+        BUSINESS -> (totalSeats * 0.30).toInt,
+        FIRST -> (totalSeats * 0.20).toInt
       )
     }
     
@@ -699,13 +680,13 @@ object BotPersonality {
       )
     }
     
-    def configureLinkClasses(airplane: Airplane): Map[LinkClass, LinkClassCapacity] = {
+    def configureLinkClasses(airplane: Airplane): Map[LinkClass, Int] = {
       // All economy: 100% economy, no business or first class
       val totalSeats = airplane.model.capacity
       Map(
-        ECONOMY -> LinkClassCapacity(ECONOMY, totalSeats),
-        BUSINESS -> LinkClassCapacity(BUSINESS, 0),
-        FIRST -> LinkClassCapacity(FIRST, 0)
+        ECONOMY -> totalSeats,
+        BUSINESS -> 0,
+        FIRST -> 0
       )
     }
     
