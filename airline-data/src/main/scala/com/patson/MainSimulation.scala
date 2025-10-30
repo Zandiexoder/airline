@@ -71,6 +71,9 @@ object MainSimulation extends App {
       AllianceSimulation.simulate(cycle, flightLinkResult, loungeResult, airportChampionInfo, countryChampionInfo)
       println("Airplane model simulation")
       AirplaneModelSimulation.simulate(cycle)
+      
+      println("Bot AI simulation")
+      BotAISimulation.simulate(cycle) // Make bots feel alive!
 
       //purge log
       println("Purging logs")
