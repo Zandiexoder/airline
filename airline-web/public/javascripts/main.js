@@ -307,10 +307,11 @@ function initMap() {
 		center: [20, 150.644],
 		zoom: 2,
 		minZoom: 2,
-		maxBounds: [[85, -180], [-85, 180]],
-		maxBoundsViscosity: 1.0,
+		// Remove maxBounds to allow infinite horizontal scrolling
+		// maxBounds: [[85, -180], [-85, 180]],
+		// maxBoundsViscosity: 1.0,
 		zoomControl: true,
-		worldCopyJump: true
+		worldCopyJump: true  // Allows seamless world wrapping
 	});
 	
 	// Add tile layer based on current map type
