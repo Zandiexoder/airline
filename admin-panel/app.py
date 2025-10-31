@@ -444,25 +444,22 @@ def get_game_activity():
     cursor = conn.cursor(dictionary=True)
     
     try:
-        # Recent airline creations
+        # Recent airline creations - Fixed to not select balance from airline table
         cursor.execute("""
-            SELECT name, balance, creation_time
-            FROM airline
-            ORDER BY id DESC
+            SELECT a.name, a.id, a.airline_type
+            FROM airline a
+            ORDER BY a.id DESC
             LIMIT 10
         """)
         recent_airlines = cursor.fetchall()
         
-        for airline in recent_airlines:
-            if airline['creation_time']:
-                airline['creation_time'] = airline['creation_time'].isoformat()
-        
-        # Top airlines by balance
+        # Top airlines by balance - Fixed to JOIN airline_info
         cursor.execute("""
-            SELECT name, balance, airline_type
-            FROM airline
-            WHERE airline_type != 2
-            ORDER BY balance DESC
+            SELECT a.name, COALESCE(ai.balance, 0) as balance, a.airline_type
+            FROM airline a
+            LEFT JOIN airline_info ai ON a.id = ai.airline
+            WHERE a.airline_type != 2
+            ORDER BY ai.balance DESC
             LIMIT 10
         """)
         top_airlines = cursor.fetchall()
@@ -651,20 +648,22 @@ def get_bots():
     cursor = conn.cursor(dictionary=True)
     
     try:
-        # Get all bot airlines
+        # Get all bot airlines - Fixed to use correct schema
+        # airline_type: 0=REGULAR, 1=DISCOUNT, 2=NON_PLAYER, 3=LUXURY, 4=REGIONAL
         cursor.execute("""
             SELECT 
                 a.id,
                 a.name,
-                a.balance,
-                a.reputation,
-                a.service_quality,
-                a.creation_time,
+                a.airline_type,
+                COALESCE(ai.balance, 0) as balance,
+                COALESCE(ai.reputation, 0) as reputation,
+                COALESCE(ai.service_quality, 0) as service_quality,
                 (SELECT COUNT(*) FROM link WHERE airline = a.id) as route_count,
                 (SELECT COUNT(*) FROM airplane WHERE owner = a.id) as aircraft_count,
                 (SELECT COUNT(*) FROM airline_base WHERE airline = a.id) as base_count
             FROM airline a
-            WHERE a.is_generated = 1
+            LEFT JOIN airline_info ai ON a.id = ai.airline
+            WHERE a.airline_type = 2
             ORDER BY a.name
         """)
         bots = cursor.fetchall()
@@ -673,9 +672,9 @@ def get_bots():
         for bot in bots:
             # Determine personality based on cash, reputation, service quality
             bot['personality'] = determine_personality(
-                bot['balance'], 
-                bot['reputation'], 
-                bot['service_quality']
+                bot.get('balance', 0), 
+                bot.get('reputation', 0), 
+                bot.get('service_quality', 0)
             )
             
             # Get route details
@@ -841,8 +840,8 @@ def get_bots_summary():
     cursor = conn.cursor(dictionary=True)
     
     try:
-        # Total bots
-        cursor.execute("SELECT COUNT(*) as total FROM airline WHERE is_generated = 1")
+        # Total bots - Fixed to use airline_type = 2
+        cursor.execute("SELECT COUNT(*) as total FROM airline WHERE airline_type = 2")
         total_bots = cursor.fetchone()['total']
         
         # Total routes
@@ -850,7 +849,7 @@ def get_bots_summary():
             SELECT COUNT(*) as total 
             FROM link l
             JOIN airline a ON l.airline = a.id
-            WHERE a.is_generated = 1
+            WHERE a.airline_type = 2
         """)
         total_routes = cursor.fetchone()['total']
         
@@ -859,19 +858,20 @@ def get_bots_summary():
             SELECT COUNT(*) as total 
             FROM airplane ap
             JOIN airline a ON ap.owner = a.id
-            WHERE a.is_generated = 1 AND ap.is_sold = 0
+            WHERE a.airline_type = 2 AND ap.is_sold = 0
         """)
         total_aircraft = cursor.fetchone()['total']
         
-        # Personality distribution
+        # Personality distribution - Fixed to JOIN airline_info
         cursor.execute("""
             SELECT 
                 a.id,
-                a.balance,
-                a.reputation,
-                a.service_quality
+                COALESCE(ai.balance, 0) as balance,
+                COALESCE(ai.reputation, 0) as reputation,
+                COALESCE(ai.service_quality, 0) as service_quality
             FROM airline a
-            WHERE a.is_generated = 1
+            LEFT JOIN airline_info ai ON a.id = ai.airline
+            WHERE a.airline_type = 2
         """)
         bots_data = cursor.fetchall()
         
