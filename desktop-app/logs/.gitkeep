@@ -1,0 +1,11 @@
+# Logs
+
+Application logs are stored here when running the desktop app.
+
+Logs include:
+- Backend startup/shutdown
+- Simulation events
+- Errors and warnings
+- Performance metrics
+
+Log files are rotated automatically.

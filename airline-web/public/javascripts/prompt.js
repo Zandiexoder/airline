@@ -205,7 +205,7 @@ function queueTutorial(tutorial) {
 }
 
 function checkTutorial(flowId) {
-    if (activeUser && !activeAirline.skipTutorial) {
+    if (activeUser && activeAirline && !activeAirline.skipTutorial) {
         if (flowId === "worldMap" || flowId === "/") {
             if (!activeAirline.headquarterAirport) {
                 queueTutorial("tutorialWelcome")

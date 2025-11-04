@@ -173,6 +173,14 @@
 		</div>
   		<div style="display: flex; align-items: center; flex-wrap: wrap;">
 			<span  style="padding: 0 4px;"><img class="clickable" src='@routes.Assets.versioned("images/icons/24px/equalizer.png")' onclick="toggleSettings()" title="Settings"></span>
+			<!-- Login/Logout UI - Hidden in desktop mode, shown in web mode -->
+			<style>
+				/* Hide login UI for desktop app users */
+				body.desktop-mode #loginDiv,
+				body.desktop-mode #logoutDiv {
+					display: none !important;
+				}
+			</style>
 			<div style="display: none; display: flex; align-items: center;" id="loginDiv" class="topBarItem">
 				<input type="text" id="loginUserName" placeholder="username" tabindex=1/>
 				<a href="/forgot-id"  target="_blank" style="margin-right: 4px">

@@ -1,3 +1,6 @@
+console.log("🔴 MAIN.JS FILE LOADED - VERSION 2025-11-04-1300");
+console.log("This proves the new main.js is being executed!");
+
 var map
 var airportMap
 var markers
@@ -14,7 +17,20 @@ var airports = undefined
 var gameConstants
 var notes = {}
 
+console.log("=== MAIN.JS LOADING ===");
+console.log("User agent:", window.navigator.userAgent);
+console.log("Hostname:", window.location.hostname);
+
 $( document ).ready(function() {
+	console.log("=== DOCUMENT READY ===");
+	// Detect desktop mode - check if running in Electron or if desktop_player is logged in
+	const isDesktopMode = window.navigator.userAgent.includes('Electron') || window.location.hostname === 'localhost';
+	console.log("Is desktop mode:", isDesktopMode);
+	if (isDesktopMode) {
+		document.body.classList.add('desktop-mode');
+		console.log("Added desktop-mode class to body");
+	}
+	
 	mobileCheck()
 	$('#tutorialHtml').load('assets/html/tutorial.html')
     $('#noticeHtml').load('assets/html/notice.html', initNotices)
@@ -24,14 +40,88 @@ $( document ).ready(function() {
 	window.addEventListener('orientationchange', refreshMobileLayout)
 
     populateLookups()
-	if ($.cookie('sessionActive')) {
+	
+	console.log("Checking sessionStorage for desktopUser:", sessionStorage.getItem('desktopUser'));
+	console.log("Checking cookie for sessionActive:", $.cookie('sessionActive'));
+	
+	// Desktop mode: check for user data in sessionStorage first
+	if (isDesktopMode && sessionStorage.getItem('desktopUser')) {
+		console.log("=== DESKTOP MODE: Found user in sessionStorage ===");
+		$("#main").removeClass("blur");
+		$("#landing").hide();
+		
+		// Use stored user data directly
+		const user = JSON.parse(sessionStorage.getItem('desktopUser'));
+		console.log("Desktop user data:", user);
+		console.log("User airlineIds:", user.airlineIds);
+		sessionStorage.removeItem('desktopUser'); // Clear after use
+		
+		activeUser = user;
+		console.log("Set activeUser:", activeUser);
+		$.cookie('sessionActive', 'true');
+		refreshWallpaper();
+		refreshLoginBar();
+		getAirports();
+		showUserSpecificElements();
+		updateChatTabs();
+		initAdminActions();
+		
+		// Load the airline if user has one
+		if (user.airlineIds && user.airlineIds.length > 0) {
+			console.log("Scheduling airline load for:", user.airlineIds[0]);
+			
+			// Use setTimeout to ensure all scripts have loaded
+			// This runs after the current execution stack completes
+			var airlineIdToLoad = user.airlineIds[0];
+			var loadAttempts = 0;
+			var maxAttempts = 50; // Try for 5 seconds max
+			
+			var tryLoadAirline = function() {
+				loadAttempts++;
+				console.log("Attempt " + loadAttempts + " to load airline, checking if selectAirline exists...");
+				
+				if (typeof selectAirline === 'function') {
+					console.log("selectAirline function found! Loading airline...");
+					selectAirline(airlineIdToLoad);
+					loadAllCountries();
+					addAirlineSpecificMapControls(map);
+					initPrompts();
+					console.log("=== DESKTOP MODE: Airline loaded successfully ===");
+					console.log("Final activeAirline:", activeAirline);
+				} else if (loadAttempts < maxAttempts) {
+					console.log("selectAirline not yet available, retrying in 100ms...");
+					setTimeout(tryLoadAirline, 100);
+				} else {
+					console.error("FAILED: selectAirline function not found after " + maxAttempts + " attempts!");
+					console.error("Available functions:", Object.keys(window).filter(k => typeof window[k] === 'function').slice(0, 20));
+				}
+			};
+			
+			// Start trying after a short delay
+			setTimeout(tryLoadAirline, 100);
+		} else {
+			console.error("ERROR: No airlineIds found in user data!");
+		}
+		updateAirlineLabelColors();
+		console.log("=== DESKTOP MODE: Initial setup complete, scheduling airline load ===");
+		console.log("activeUser:", activeUser);
+	} else if (isDesktopMode || $.cookie('sessionActive')) {
+		// Desktop mode OR existing session: close splash screen and load user
+		console.log("=== DESKTOP MODE: Loading user from server (no sessionStorage) ===");
+		if (isDesktopMode) {
+			$("#main").removeClass("blur");
+			$("#landing").hide();
+		}
+		// Load user from server - this will auto-login desktop_player if in desktop mode
 		loadUser(false)
 	} else {
 		hideUserSpecificElements()
 		refreshLoginBar()
 		getAirports();
 //		printConsole("Please log in")
-        showAbout();
+		if (!isDesktopMode) {
+			showAbout();
+		}
         refreshWallpaper()
 	}
 
@@ -180,9 +270,13 @@ function refreshLoginBar() {
 
 
 function loadUser(isLogin) {
+	// Desktop mode: use desktop auto-login endpoint
+	const isDesktopMode = window.navigator.userAgent.includes('Electron') || window.location.hostname === 'localhost';
+	const url = (isDesktopMode && !isLogin) ? "desktop/session" : "login";
+	
 	var ajaxCall = {
 	  type: "POST",
-	  url: "login",
+	  url: url,
 	  success: function(user) {
 		  if (user) {
 		      closeAbout()

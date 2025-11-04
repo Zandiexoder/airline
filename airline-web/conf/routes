@@ -12,6 +12,11 @@ GET		/wsWithActor						controllers.WebsocketApplication.wsWithActor
 
 GET		 /game/constants			  controllers.Application.getGameRules()
 
+# Desktop mode endpoints
+POST	 /desktop/auto-login				  controllers.DesktopApplication.autoLogin
+POST	 /desktop/session					  controllers.DesktopApplication.getSession
+POST	 /desktop/set-airline-name			  controllers.DesktopApplication.setAirlineName
+
 POST	 /login							  controllers.UserApplication.login
 POST	 /logout						  controllers.UserApplication.logout
 #GET	 	 /login							  controllers.UserApplication.login

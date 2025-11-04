@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup Your Airline - FlightForge</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Animated background */
+    .background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .plane {
+      position: absolute;
+      font-size: 40px;
+      opacity: 0.1;
+      animation: fly linear infinite;
+    }
+
+    @keyframes fly {
+      0% {
+        transform: translateX(-100px) translateY(0) rotate(45deg);
+      }
+      100% {
+        transform: translateX(calc(100vw + 100px)) translateY(-50vh) rotate(45deg);
+      }
+    }
+
+    /* Setup container */
+    .setup-container {
+      position: relative;
+      z-index: 1;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 60px 80px;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .logo-icon {
+      font-size: 80px;
+      margin-bottom: 10px;
+    }
+
+    .logo-text {
+      font-size: 42px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 18px;
+      color: #a0a0a0;
+      margin-bottom: 50px;
+    }
+
+    .form-group {
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #e0e0e0;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 16px 20px;
+      font-size: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 45px;
+    }
+
+    select option {
+      background: #1a1a2e;
+      color: #ffffff;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #888;
+      margin-top: 8px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 40px;
+    }
+
+    button {
+      flex: 1;
+      padding: 18px 30px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .error-message {
+      background: rgba(231, 76, 60, 0.2);
+      border: 1px solid rgba(231, 76, 60, 0.5);
+      color: #ff6b6b;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="background" id="background"></div>
+
+  <div class="setup-container">
+    <div class="logo">
+      <div class="logo-icon">✈️</div>
+      <div class="logo-text">FlightForge</div>
+    </div>
+    
+    <div class="subtitle">Create Your Airline Empire</div>
+
+    <div id="errorMessage" class="error-message"></div>
+
+    <form id="airlineForm">
+      <div class="form-group">
+        <label for="airlineName">Airline Name</label>
+        <input 
+          type="text" 
+          id="airlineName" 
+          placeholder="e.g., Sky Express, Pacific Airways"
+          maxlength="50"
+          required
+          autofocus
+        />
+        <div class="hint">Choose a unique name for your airline (3-50 characters)</div>
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="btn-secondary" onclick="goBack()">Back</button>
+        <button type="submit" class="btn-primary" id="submitBtn">
+          Start Flying
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Animated background planes
+    function createPlanes() {
+      const background = document.getElementById('background');
+      const planeEmojis = ['✈️', '🛩️', '🛫'];
+      
+      for (let i = 0; i < 8; i++) {
+        const plane = document.createElement('div');
+        plane.className = 'plane';
+        plane.textContent = planeEmojis[Math.floor(Math.random() * planeEmojis.length)];
+        plane.style.top = Math.random() * 100 + '%';
+        plane.style.animationDuration = (20 + Math.random() * 20) + 's';
+        plane.style.animationDelay = Math.random() * 10 + 's';
+        background.appendChild(plane);
+      }
+    }
+
+    createPlanes();
+
+    // Form submission
+    const form = document.getElementById('airlineForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorMessage = document.getElementById('errorMessage');
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.classList.add('show');
+      setTimeout(() => {
+        errorMessage.classList.remove('show');
+      }, 5000);
+    }
+
+    function goBack() {
+      window.electronAPI.app.returnToMenu();
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const airlineName = document.getElementById('airlineName').value.trim();
+
+      // Validation
+      if (airlineName.length < 3) {
+        showError('Airline name must be at least 3 characters');
+        return;
+      }
+
+      // Disable button and show loading
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = 'Creating Airline<span class="spinner"></span>';
+
+      try {
+        // Start backend first
+        const backendResult = await window.electronAPI.backend.start();
+        
+        if (!backendResult.success) {
+          showError('Failed to start backend: ' + backendResult.error);
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = 'Start Flying';
+          return;
+        }
+
+        // Wait a moment for backend to be ready
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Call auto-login endpoint with airline name
+        const response = await fetch('http://localhost:9000/desktop/auto-login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            'airlineName': airlineName
+          }),
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          showError('Failed to create airline');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = 'Start Flying';
+          return;
+        }
+
+        const user = await response.json();
+        
+        console.log("=== AUTO-LOGIN RESPONSE ===");
+        console.log("User data received:", user);
+        console.log("airlineIds:", user.airlineIds);
+        
+        // Store user data in sessionStorage for the main page to use
+        sessionStorage.setItem('desktopUser', JSON.stringify(user));
+        console.log("Stored in sessionStorage:", sessionStorage.getItem('desktopUser'));
+        
+        // Navigate to game - user data is in sessionStorage
+        console.log("Navigating to game...");
+        window.location.href = 'http://localhost:9000';
+      } catch (error) {
+        showError('Error: ' + error.message);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Start Flying';
+      }
+    });
+
+    // Auto-focus on airline name input
+    document.getElementById('airlineName').focus();
+  </script>
+</body>
+</html>

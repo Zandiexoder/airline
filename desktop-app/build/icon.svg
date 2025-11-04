@@ -1,0 +1,53 @@
+<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#1a1a2e" rx="180"/>
+  
+  <!-- Sky gradient -->
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a90e2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c5aa0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" fill="url(#sky)" rx="140"/>
+  
+  <!-- Airplane -->
+  <g transform="translate(512, 400) scale(3)">
+    <!-- Fuselage -->
+    <ellipse cx="0" cy="0" rx="45" ry="15" fill="#ffffff"/>
+    
+    <!-- Wings -->
+    <path d="M -30,-5 L -60,-25 L -55,-20 L -25,-5 Z" fill="#e0e0e0"/>
+    <path d="M -30,5 L -60,25 L -55,20 L -25,5 Z" fill="#e0e0e0"/>
+    
+    <!-- Tail -->
+    <path d="M 40,-5 L 50,-15 L 48,-8 L 40,0 Z" fill="#e0e0e0"/>
+    <path d="M 40,0 L 50,5 L 50,0 Z" fill="#e0e0e0"/>
+    
+    <!-- Cockpit -->
+    <circle cx="-35" cy="0" r="8" fill="#4a90e2"/>
+    
+    <!-- Windows -->
+    <circle cx="-20" cy="0" r="3" fill="#4a90e2"/>
+    <circle cx="-10" cy="0" r="3" fill="#4a90e2"/>
+    <circle cx="0" cy="0" r="3" fill="#4a90e2"/>
+    <circle cx="10" cy="0" r="3" fill="#4a90e2"/>
+    <circle cx="20" cy="0" r="3" fill="#4a90e2"/>
+  </g>
+  
+  <!-- Flight path -->
+  <path d="M 200,600 Q 400,550 600,580 T 800,600" 
+        stroke="#ffffff" 
+        stroke-width="3" 
+        stroke-dasharray="10,10" 
+        fill="none" 
+        opacity="0.4"/>
+  
+  <!-- App name -->
+  <text x="512" y="750" 
+        font-family="Arial, sans-serif" 
+        font-size="72" 
+        font-weight="bold" 
+        fill="#ffffff" 
+        text-anchor="middle">FlightForge</text>
+</svg>

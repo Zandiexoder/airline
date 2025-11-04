@@ -1,0 +1,100 @@
+{
+  "name": "flightforge-desktop",
+  "version": "1.0.0",
+  "description": "FlightForge - Airline Management Simulation Desktop App",
+  "main": "src/main.js",
+  "author": "FlightForge Contributors",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "cross-env NODE_ENV=development electron .",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "tree-kill": "^1.2.2",
+    "electron-log": "^5.0.0"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "cross-env": "^7.0.3"
+  },
+  "build": {
+    "appId": "com.flightforge.app",
+    "productName": "FlightForge",
+    "copyright": "Copyright © 2025 FlightForge",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../airline-data/target/scala-2.13",
+        "to": "backend/airline-data",
+        "filter": ["*.jar"]
+      },
+      {
+        "from": "../airline-web/target/universal/stage",
+        "to": "backend/airline-web",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../airlines.csv",
+        "to": "backend/data/airlines.csv"
+      },
+      {
+        "from": "../airline-data/*.csv",
+        "to": "backend/data",
+        "filter": ["*.csv"]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.games",
+      "icon": "build/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Game",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

@@ -1,0 +1,26 @@
+# Keep node_modules
+node_modules/
+
+# Keep dist directory
+dist/
+
+# Keep logs
+logs/*.log
+
+# Keep build artifacts
+*.dmg
+*.exe
+*.deb
+*.AppImage
+*.snap
+
+# macOS
+.DS_Store
+*.icns
+
+# Build caches
+.webpack/
+out/
+
+# Electron builder output
+dist-electron/

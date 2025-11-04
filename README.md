@@ -3,6 +3,14 @@ An opensource airline game.
 Forked from https://www.airline-club.com/
 Live at https://myfly.club/
 
+## 🖥️ **NEW: Desktop App Available!**
+
+Play FlightForge as a native desktop application with offline support, system tray integration, and better performance. See the [desktop-app/](desktop-app/) directory for details.
+
+- ✅ Windows, macOS, Linux support
+- ✅ Integrated backend management
+- ✅ System tray controls
+- ✅ Native window experience
 
 ![Screenshot 1](https://user-images.githubusercontent.com/2895902/74759887-5a966380-522e-11ea-9e54-2252af63d5ea.gif)
 
